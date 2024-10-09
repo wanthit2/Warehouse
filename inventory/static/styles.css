@@ -27,7 +27,8 @@
  }
 
  h1 {
-     margin-bottom: 20px;
+     margin-bottom: 30px;
+     font-size: 50px;
  }
 h2{
     border: 1px solid  #000000;
@@ -36,23 +37,24 @@ h2{
      display: flex;
      justify-content: space-between;
      align-items: center;
-     margin-bottom: 20px;
+    #margin-bottom: 20px;
 
  }
 
  .search-bar input {
-     width: 300px;
+     width: 500px;
+     font-size: 25px;
      padding: 10px;
      border: 1px solid #ccc;
      border-radius: 5px;
- }
+}
 
 
  .action-buttons button {
      background-color: #e6e6e6;
      color: #000000;
      border: none;
-     padding: 10px 20px;
+     padding: 20px 20px;
      margin-left: 10px;
      border-radius: 5px;
      cursor: pointer;
@@ -76,9 +78,11 @@ h2{
      border: 1px solid #ccc;
      padding: 10px;
      text-align: left;
+     margin-top: 5px;
  }
 
  table th {
+     margin-top: 2px;
      background-color: #f2f2f2;
  }
  .item-card {
@@ -123,21 +127,57 @@ h2{
     cursor: pointer; /* เปลี่ยนเคอร์เซอร์เป็นมือเมื่อชี้ที่รายการ */
 }
 
-        /* เพิ่มสไตล์ให้กับปุ่มแสดงหมวดหมู่ */
- .showCategoriesButton {
-     font-size: 50px;
-     margin-bottom: 10px;
-     background-color: #e6e6e6;
-     color: #000066;
-     border: 1px solid #000066;
-     padding: 10px;
-     border-radius: 5px;
-     cursor: pointer;
- }
+.showCategoriesButton {
 
- .showCategoriesButton:hover {
-     background-color: #d4d4d4;
- }
+    font-size: 100px; /* ขนาดฟอนต์ */
+    margin-bottom: 30px; /* ระยะห่างด้านล่าง */
+    background-color: #e6e6e6; /* สีพื้นหลัง */
+    color: #000066; /* สีข้อความ */
+    border: 1px solid #000066; /* ขอบ */
+    padding: 10px; /* Padding */
+    border-radius: 5px; /* มุมโค้ง */
+    cursor: pointer; /* เคอร์เซอร์เมื่อชี้ */
+    text-align: center; /* จัดกลางข้อความ */
+    display: inline-block; /* ทำให้ปุ่มแสดงเป็นบล็อก */
+    transition: background-color 0.3s, color 0.3s; /* เพิ่มการเปลี่ยนสีเมื่อชี้ */
+}
+
+.showCategoriesButton:hover {
+
+    background-color: #000066; /* เปลี่ยนสีพื้นหลังเมื่อชี้ */
+    color: #ffffff; /* เปลี่ยนสีข้อความเมื่อชี้ */
+}
+
  .td{
      margin-bottom: 10px;
+
  }
+ .te {
+     margin-top: 30px;
+    margin-bottom: 30px; /* ระยะห่างด้านล่าง */
+    border: none; /* ไม่ต้องการขอบเดิม */
+    height: 2px; /* ความสูงของเส้น */
+    background-color: #000066; /* สีของเส้น */
+    width: 100%; /* ความกว้างของเส้น */
+}
+
+.home {
+    text-align: left; /* สำหรับจัดข้อความในองค์ประกอบให้ชิดซ้าย */
+    float: left;      /* ทำให้บล็อกอยู่ชิดซ้าย */
+    /* หรือสามารถใช้ margin */
+    margin-left: 5px;  /* ระยะห่างจากขอบซ้าย */
+}
+.item-cards {
+    display: flex; /* ทำให้เนื้อหาภายในจัดเรียงในแถว */
+    align-items: center; /* จัดแนวกลางแนวตั้ง */
+    padding: 20px; /* เพิ่ม padding */
+    background-color: #f8f9fa; /* สีพื้นหลัง */
+    border-radius: 5px; /* ทำให้มุมโค้ง */
+    text-decoration: none; /* เอาเส้นใต้ลิงก์ออก */
+    color: #333; /* เปลี่ยนสีข้อความ */
+    cursor: pointer; /* เปลี่ยนเคอร์เซอร์เมื่อชี้ */
+}
+
+.item-cards:hover {
+    background-color: #e2e6ea; /* สีพื้นหลังเมื่อชี้ */
+}

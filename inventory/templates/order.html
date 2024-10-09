@@ -5,10 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <title>รายการ</title>
-    <link rel="stylesheet" href="static/styles.css">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
+    <script src="{% static 'script.js' %}"></script>
 </head>
 <body>
     <div class="container">
+        <!-- Sidebar -->
         <aside class="sidebar">
             <div class="item-card"><i class="bi bi-bar-chart-line"></i> รายการ</div>
             <div class="item-card"><i class="bi bi-clipboard-data"></i> คำสั่งซื้อ</div>
@@ -16,33 +19,36 @@
             <div class="item-card"><i class="bi bi-box-seam"></i> สินค้า</div>
         </aside>
 
+        <!-- Main Content -->
         <main class="content">
             <h1>รายการ</h1>
+
+            <!-- Search Bar -->
             <div class="search-bar">
                 <label>
                     <input type="text" placeholder="ค้นหา...">
                 </label>
             </div>
-            <h2>
 
-            </h2>
-
-
+            <!-- Action Buttons -->
             <div class="action-buttons">
-                 <button>ฝ่ายขาย</button>
-                 <button>สถานะ</button>
-                 <button>กรอง</button>
+                <button>ฝ่ายขาย</button>
+                <button>สถานะ</button>
+                <button>กรอง</button>
             </div>
+            <div class="te"></div>
+
+            <!-- Categories -->
             <div>
-                <!-- ปุ่มแสดง/ซ่อนรายการหมวดหมู่ -->
-            <button id="showCategoriesButton">รายการ</button>
-            <ul id="categoryList">
-                <li>หมวดหมู่ที่ 1</li>
-                <li>หมวดหมู่ที่ 2</li>
-                <li>หมวดหมู่ที่ 3</li>
-                <li>หมวดหมู่ที่ 4</li>
-            </ul>
+                <button id="showCategoriesButton">รายการ</button>
+                <ul id="categoryList" style="display: none;">
+                    <li>หมวดหมู่ที่ 1</li>
+                    <li>หมวดหมู่ที่ 2</li>
+                    <li>หมวดหมู่ที่ 3</li>
+                </ul>
             </div>
+
+            <!-- Orders Table -->
             <table class="table">
                 <thead>
                     <tr>
@@ -58,15 +64,15 @@
                 <tbody>
                     {% if orders %}
                         {% for order in orders %}
-                        <tr class="td">
-                            <td>{{ order.order_id }}</td>
-                            <td>{{ order.product }}</td>
-                            <td>{{ order.category }}</td>
-                            <td>{{ order.sales_channel }}</td>
-                            <td>{{ order.target }}</td>
-                            <td>{{ order.score }}</td>
-                            <td>{{ order.status }}</td>
-                        </tr>
+                            <tr class="td">
+                                <td>{{ order.order_id }}</td>
+                                <td>{{ order.product }}</td>
+                                <td>{{ order.category }}</td>
+                                <td>{{ order.sales_channel }}</td>
+                                <td>{{ order.target }}</td>
+                                <td>{{ order.score }}</td>
+                                <td>{{ order.status }}</td>
+                            </tr>
                         {% endfor %}
                     {% else %}
                         <tr>
@@ -78,4 +84,11 @@
         </main>
     </div>
 </body>
+     <div class="home">
+    <a href="{% url 'home' %}" class="item-cards">
+        <i class="bi bi-house-door"></i> <!-- เปลี่ยนไอคอนตามที่ต้องการ -->
+        Home
+    </a>
+</div>
+
 </html>
