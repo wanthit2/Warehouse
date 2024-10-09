@@ -76,8 +76,12 @@ WSGI_APPLICATION = "Warehouse.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.mysql",  # เปลี่ยนจาก sqlite3 เป็น mysql
+        "NAME": "warehouse_db",  # ชื่อฐานข้อมูลที่คุณสร้าง
+        "USER": "your_mysql_user",  # ชื่อผู้ใช้ MySQL ของคุณ
+        "PASSWORD": "your_password",  # รหัสผ่านของผู้ใช้ MySQL ของคุณ
+        "HOST": "localhost",  # หรือ '127.0.0.1'
+        "PORT": "3306",  # พอร์ตที่ MySQL ใช้ (ปกติคือ 3306)
     }
 }
 
