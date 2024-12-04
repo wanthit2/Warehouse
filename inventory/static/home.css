@@ -1,0 +1,105 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background-color: #f5f5f5;
+}
+
+.header {
+  background-color: #ffffff;
+  padding: 20px;
+  text-align: start;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.header h1 {
+  color: #3333ff;
+  margin: 0;
+  font-size: 5rem;
+}
+
+.nav-links {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+}
+
+.nav-links li {
+  display: inline;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: #333;
+  font-size: 2rem;
+  padding: 5px 100px;
+  border: 1px solid #333;
+  border-radius: 5px;
+}
+
+.nav-links a:hover {
+  background-color: #3333ff;
+  color: #fff;
+}
+.main-content {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center; /* เปลี่ยนจาก flex-end เป็น center เพื่อให้เนื้อหากลาง */
+  align-items: center;
+  padding: 20px; /* ลดการ padding จาก 150px เพื่อไม่ให้เกินขอบ */
+  background-color: #ffffff;
+  margin: 20px;
+  border-radius: 10px;
+  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
+  max-width: 100%;  /* ให้ขนาดไม่เกิน 100% ของหน้าจอ */
+  box-sizing: border-box; /* ให้การคำนวณขนาดรวม padding และ border */
+}
+
+.main-content {
+    display: flex;            /* ใช้ flexbox สำหรับจัดการการวางตำแหน่ง */
+    justify-content: start;  /* จัดตำแหน่งกลางในแนวนอน */
+    align-items: center;      /* จัดตำแหน่งกลางในแนวตั้ง */
+    margin-bottom: 20px;
+    gap: 400px;                /* เพิ่มระยะห่างระหว่างภาพและข้อความ */
+}
+
+.image-section img {
+    width: 100%;  /* ให้ภาพยืดตามความกว้างของคอนเทนเนอร์ */
+    height: auto; /* ความสูงจะปรับตามสัดส่วน */
+}
+
+.text-section {
+  margin-left: 20px;
+  max-width: 500px;
+  padding: 20px;  /* เพิ่ม padding ให้กับภายในกรอบ */
+  background-color: #ffffff;  /* เพิ่มพื้นหลังให้กรอบ */
+  border: 2px solid #3333ff;  /* กำหนดสีและความหนาของขอบ */
+  border-radius: 10px;  /* มุมโค้งของกรอบ */
+  margin-top: 20px;  /* เพิ่มระยะห่างจากด้านบน */
+  margin-bottom: 20px;  /* เพิ่มระยะห่างจากด้านล่าง */
+}
+
+.text-section h2 {
+  color: #ffffff;
+  background-color: #3333ff;
+  padding: 10px;  /* ลดการ padding เพื่อไม่ให้ข้อความเบียดเกินไป */
+  border-radius: 5px;
+  text-align: center;
+}
+
+.text-section ul {
+  list-style: none;
+  padding: 10px;
+  margin: 20px 0 0 0;
+  color: #333;
+}
+
+.text-section li {
+  margin: 10px 5;
+  font-size: 1.5rem;
+}
+

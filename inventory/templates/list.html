@@ -13,11 +13,11 @@
     <div class="container">
         <!-- Sidebar -->
         <aside class="sidebar">
-            <div class="item-card"><i class="bi bi-bar-chart-line"></i> รายการ</div>
-            <div class="item-card"><i class="bi bi-clipboard-data"></i> คำสั่งซื้อ</div>
-            <div class="item-card"><i class="bi bi-pie-chart"></i> กราฟ</div>
-            <div class="item-card"><i class="bi bi-box-seam"></i> สินค้า</div>
-        </aside>
+    <a href="{% url 'my_view' %}" class="item-card"><i class="bi bi-bar-chart-line"></i> รายการ</a>
+    <a href="{% url 'order_view' %}" class="item-card"><i class="bi bi-clipboard-data"></i> คำสั่งซื้อ</a>
+    <a href="{% url 'category_view' %}" class="item-card"><i class="bi bi-pie-chart"></i> กราฟ</a>
+    <a href="{% url 'products' %}" class="item-card"><i class="bi bi-box-seam"></i> สินค้า</a>
+</aside>
 
         <!-- Main Content -->
         <main class="content">
@@ -62,7 +62,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% if orders %}
+                    {% if order %}
                         {% for order in orders %}
                             <tr class="td">
                                 <td>{{ order.order_id }}</td>

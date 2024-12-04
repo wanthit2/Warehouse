@@ -1,0 +1,90 @@
+/* การตั้งค่าทั่วไป */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f9f9f9;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    color: #333;
+}
+
+/* สไตล์สำหรับ container */
+.container {
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 80%;
+    max-width: 800px;
+    text-align: center;
+}
+
+/* สไตล์ตาราง */
+table {
+    width: 100%;
+    margin-top: 20px;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    background-color: #4CAF50;
+    color: white;
+}
+
+tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* สไตล์ปุ่ม */
+button {
+    padding: 10px 20px;
+    margin-top: 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+.cancel {
+    background-color: #ff4b4b;
+}
+
+.cancel:hover {
+    background-color: #ff1f1f;
+}
+
+/* สไตล์หัวข้อ */
+h2 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+/* สไตล์ข้อความ */
+p {
+    font-size: 16px;
+    margin: 10px 0;
+}
+
+/* การจัดการ input */
+input[type="number"] {
+    padding: 5px;
+    width: 60px;
+    text-align: center;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+

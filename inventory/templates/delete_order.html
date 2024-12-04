@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ยืนยันการลบคำสั่งซื้อ</title>
+</head>
+<body>
+    <h2>ยืนยันการลบคำสั่งซื้อ</h2>
+    <p>คุณแน่ใจหรือไม่ว่าต้องการลบคำสั่งซื้อ: {{ order.product }}?</p>
+    <form method="POST">
+        {% csrf_token %}
+        <button type="submit">ลบ</button>
+        <a href="{% url 'order_view' %}">ยกเลิก</a>  <!-- ลิงค์กลับไปยังหน้าแสดงคำสั่งซื้อ -->
+    </form>
+</body>
+</html>

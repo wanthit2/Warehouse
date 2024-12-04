@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'login.css' %}">
+</head>
+<body>
+  <div class="login-container">
+    <h2>Login</h2>
+    <!-- แสดงข้อความ Error/Success -->
+    <div class="messages">
+      {% if messages %}
+        {% for message in messages %}
+          <p class="message {{ message.tags }}">{{ message }}</p>
+        {% endfor %}
+      {% endif %}
+    </div>
+    <!-- ฟอร์ม Login -->
+    <form method="post" action="{% url 'login' %}">
+      {% csrf_token %}
+      <div class="input-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="Enter your username" required>
+      </div>
+      <div class="input-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+      </div>
+      <div class="options">
+        <label>
+          <input type="checkbox" id="rememberMe" name="rememberMe">
+          Remember me
+        </label>
+        <a href="#" class="forgot-password">Forgot your password?</a>
+      </div>
+      <button type="submit" class="login-btn">Login</button>
+    </form>
+    <p class="register">
+      Don't have an account? <a href="{% url 'register' %}">Register</a>
+    </p>
+  </div>
+</body>
+</html>

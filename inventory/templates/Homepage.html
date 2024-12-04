@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory System</title>
+    {% load static %} <!-- ลิงก์ไฟล์ CSS -->
+    <link rel="stylesheet" href="{% static 'home.css' %}">
+
+</head>
+<body>
+    <!-- ส่วน Header -->
+    <div class="header">
+        <h1>ระบบสต๊อกสินค้า</h1>
+        <ul class="nav-links">
+            <li><a href="#home">หน้าแรก</a></li>
+            <li><a href="{% url 'login' %}">เข้าสู่ระบบ</a></li>
+            <li><a href="#register">สมัครสมาชิก</a></li>
+        </ul>
+    </div>
+
+    <!-- เนื้อหาหลัก -->
+    <div class="main-content">
+        <!-- ภาพประกอบ -->
+         {% load static %}
+        <div class="image-section">
+            <img src="{% static 'images/stork.jpg' %}" alt="Warehouse Image">
+
+        </div>
+
+        <!-- ข้อความ -->
+        <div class="text-section">
+            <h2>ระบบสต๊อกดียังไง</h2>
+            <ul>
+                <li>ลดต้นทุนการเก็บสินค้า</li>
+                <li>ลดความเสี่ยงจากการขาดแคลนสินค้า</li>
+                <li>เพิ่มประสิทธิภาพในการจัดการธุรกิจ</li>
+                <li>เพิ่มความสามารถในการวิเคราะห์</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
