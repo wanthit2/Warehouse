@@ -4,7 +4,9 @@ from .views import home, create_user, list_users, category_view, my_view, order_
 from . import views
 
 urlpatterns = [
+    path('homepage/', views.homepage, name='homepage'),
     path('', views.home, name='home'),
+    path('register/', views.register, name='register'),
     path('login/', views.login_view, name='login'),
     path('create-user/', views.create_user, name='create_user'),
     path('users/', views.list_users, name='list_users'),
@@ -15,10 +17,12 @@ urlpatterns = [
     path('create-order/', views.create_order, name='create_order'),
     path('delete-order/<int:order_id>/', views.delete_order, name='delete_order'),
     path('other-page/', views.other_view, name='other_view'),
-    path('homepage/', views.homepage, name='homepage'),
+
     path('sales/', views.sales_view, name='sales_view'),
     path('status/', views.status_view, name='status_view'),
     path('filter/', views.filter_view, name='filter_view'),
     path('update_status/<int:order_id>/', views.update_status, name='update_status'),
-    path('register/', views.register, name='register'),  # ตั้ง URL สำหรับฟังก์ชัน register
+    path('product1', views.product_view, name='product_view'),
+
+
 ]

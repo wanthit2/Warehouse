@@ -65,6 +65,10 @@
             font-size: 14px;
             margin-bottom: 5px;
         }
+        .error-message {
+            color: red;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -73,24 +77,56 @@
         <form method="post">
             {% csrf_token %}
 
+            <!-- Username field -->
             <div class="form-group">
                 <label for="id_username">Username</label>
                 {{ form.username }}
+                {% if form.username.errors %}
+                    <div class="error-message">
+                        {% for error in form.username.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
 
+            <!-- Email field -->
             <div class="form-group">
                 <label for="id_email">Email</label>
                 {{ form.email }}
+                {% if form.email.errors %}
+                    <div class="error-message">
+                        {% for error in form.email.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
 
+            <!-- Password field -->
             <div class="form-group">
                 <label for="id_password1">Password</label>
                 {{ form.password1 }}
+                {% if form.password1.errors %}
+                    <div class="error-message">
+                        {% for error in form.password1.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
 
+            <!-- Confirm Password field -->
             <div class="form-group">
                 <label for="id_password2">Confirm Password</label>
                 {{ form.password2 }}
+                {% if form.password2.errors %}
+                    <div class="error-message">
+                        {% for error in form.password2.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
 
             <button type="submit">Register</button>

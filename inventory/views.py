@@ -1,11 +1,13 @@
-
+from .forms import OrderForm
 from .models import *
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from django.contrib.auth import login, logout , authenticate
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
-from .forms import *
+from django.contrib.auth.forms import UserCreationForm
+from django import forms
+from django.contrib.auth import authenticate, login as auth_login
+
 
 def home(request):
     return render(request, 'list.html')
@@ -44,6 +46,8 @@ def products(request):
         {'name': 'สินค้า B', 'price': 300, 'quantity': 5}
     ]
     return render(request, 'products.html', {'products': products})
+def product_view(request):
+    return render(request, 'product1.html')
 
 def create_order(request):
     if request.method == 'POST':
@@ -51,7 +55,7 @@ def create_order(request):
         if form.is_valid():
             form.save()  # บันทึกคำสั่งซื้อใหม่
             messages.success(request, 'เพิ่มคำสั่งซื้อเรียบร้อยแล้ว')
-            return redirect('order_view')  # เปลี่ยนไปที่หน้าแสดงรายการคำสั่งซื้อ
+            return redirect('my_view')  # เปลี่ยนไปที่หน้าแสดงรายการคำสั่งซื้อ
     else:
         form = OrderForm()
 
@@ -61,7 +65,7 @@ def delete_order(request, order_id):
     order = get_object_or_404(Order, order_id=order_id)  # ค้นหาคำสั่งซื้อที่ต้องการลบ
     order.delete()  # ลบคำสั่งซื้อ
     messages.success(request, 'ลบคำสั่งซื้อเรียบร้อยแล้ว')  # แจ้งข้อความ
-    return redirect('order_view')  # กลับไปยังหน้ารายการคำสั่งซื้อ
+    return redirect('my_view')  # กลับไปยังหน้ารายการคำสั่งซื้อ
 
 def other_view(request):
     return render(request, 'order1.html')  # แทนที่ '.html' ด้วยชื่อไฟล์ของคุณ
@@ -69,7 +73,7 @@ def other_view(request):
 def homepage(request):
     return render(request, 'homepage.html')
 
-def login(request):
+def login_page(request):
     return render(request, 'login.html')
 
 def login_view(request):
@@ -78,9 +82,9 @@ def login_view(request):
         password = request.POST.get('password', '')
         user = authenticate(request, username=username, password=password)
         if user is not None:
-            login(request, user)
+            auth_login(request, user)  # ใช้ฟังก์ชัน login ที่มาจาก django.contrib.auth
             messages.success(request, 'เข้าสู่ระบบสำเร็จ')
-            return redirect('homepage')
+            return redirect('my_view')
         else:
             messages.error(request, 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง')
     return render(request, 'login.html')
@@ -133,22 +137,22 @@ def update_status(request, order_id):
 
 def register(request):
     if request.method == 'POST':
-        username = request.POST['username']
-        email = request.POST['email']
-        password = request.POST['password']
-        confirm_password = request.POST['confirm_password']
-
-        if password == confirm_password:
-            if not User.objects.filter(username=username).exists():
-                if not User.objects.filter(email=email).exists():  # ตรวจสอบว่ามีอีเมลซ้ำหรือไม่
-                    user = User.objects.create_user(username=username, email=email, password=password)
-                    Member.objects.create(user=user, extra_info="Default info")
-                    messages.success(request, 'การลงทะเบียนสำเร็จ! กรุณาเข้าสู่ระบบ.')
-                    return redirect('login')
-                else:
-                    messages.error(request, 'อีเมลนี้ถูกใช้งานแล้ว')
-            else:
-                messages.error(request, 'ชื่อผู้ใช้นี้ถูกใช้งานแล้ว')
+        form = CustomUserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()  # บันทึกผู้ใช้ใหม่
+            messages.success(request, 'การลงทะเบียนสำเร็จ! กรุณาเข้าสู่ระบบ.')
+            return redirect('login')
         else:
-            messages.error(request, 'รหัสผ่านไม่ตรงกัน')
-    return render(request, 'register.html')
+            messages.error(request, 'กรุณากรอกข้อมูลให้ครบถ้วน')
+    else:
+        form = CustomUserCreationForm()
+
+    return render(request, 'register.html', {'form': form})
+class CustomUserCreationForm(UserCreationForm):
+    email = forms.EmailField(required=True)
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'password1', 'password2')
+
+

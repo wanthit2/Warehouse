@@ -1,0 +1,183 @@
+/* ตั้งค่าพื้นฐาน */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f8f9fa; /* สีพื้นหลัง */
+  display: flex;
+  min-height: 100vh;
+}
+
+.container {
+  display: flex;
+  width: 100%;
+}
+
+.sidebar {
+  width: 150px; /* ปรับความกว้างให้เหมาะสม */
+  background-color: #001E94;
+  color: white;
+  padding: 20px 10px;
+  height: 100vh;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px; /* เพิ่มระยะห่างระหว่างการ์ด */
+}
+
+.sidebar .item-card {
+  width: 100px;
+  height: 100px;
+  background-color: #000066;
+  color: white;
+  border-radius: 10px;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: bold;
+  transition: transform 0.3s, background-color 0.3s;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar .item-card:hover {
+  background-color: #0044cc;
+  transform: translateY(-5px);
+}
+
+.sidebar .item-card i {
+  font-size: 32px;
+  margin-bottom: 5px;
+}
+
+.sidebar .item-card span {
+  text-align: center;
+}
+/* Main Content */
+.main-content {
+  flex-grow: 1;
+  padding: 20px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+header h1 {
+  margin: 0;
+  color: #001E94;
+}
+
+.add-product {
+  background-color: #001E94;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.add-product:hover {
+  background-color: #0044cc;
+}
+
+/* Search Bar */
+.search-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.search-bar input {
+  flex: 1;
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+.search-bar select {
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+/* Product Grid */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.product-card {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.product-image {
+  width: 100%;
+  height: auto;
+  margin-bottom: 15px;
+  border-radius: 10px;
+}
+
+.product-card p {
+  margin: 10px 0;
+  font-size: 16px;
+  color: #333;
+}
+
+.product-card button {
+  background-color: #001E94;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.product-card button:hover {
+  background-color: #0044cc;
+}
+.item-card {
+    color: #FFFFFF;
+    background-color: #000066;
+    width: 100px; /* กำหนดความกว้างเป็น 300px */
+    height: 100px; /* ความสูงคงที่ */
+    border: 1px solid  #000066;
+    border-radius: 10px;
+    margin-bottom: 50px; /* เว้นระยะห่างระหว่างกล่อง */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1); /* เงาของกล่อง */
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+ .item-card i {
+     font-size: 24px;
+     margin-bottom: 10px;
+ }

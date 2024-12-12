@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>เพิ่มคำสั่งซื้อ</title>
+    <title>เพิ่มรายการ</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"> <!-- Bootstrap CSS -->
 </head>
 <body>
     <div class="container mt-5">
-        <h2>เพิ่มคำสั่งซื้อ</h2>
+        <h2>เพิ่มรายการ</h2>
         <form method="POST">
             {% csrf_token %}
             {{ form.as_p }}  <!-- แสดงฟอร์ม -->
-            <button type="submit" class="btn btn-primary">เพิ่มคำสั่งซื้อ</button>
+            <button type="submit" class="btn btn-primary">เพิ่มรายการ</button>
         </form>
     </div>
 </body>

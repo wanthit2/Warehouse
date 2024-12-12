@@ -33,7 +33,7 @@
 h2{
     border: 1px solid  #000000;
 }
- .search-bar {
+  .search-bar {
      display: flex;
      justify-content: space-between;
      align-items: center;
@@ -181,3 +181,17 @@ h2{
 .item-cards:hover {
     background-color: #e2e6ea; /* สีพื้นหลังเมื่อชี้ */
 }
+.btn {
+    display: inline-block; /* ทำให้ลิงก์แสดงในรูปแบบบล็อก */
+    padding: 10px 20px; /* กำหนดพื้นที่ด้านใน */
+    background-color: #007bff; /* สีพื้นหลัง */
+    color: #ffffff; /* สีตัวอักษร */
+    text-decoration: none; /* ลบเส้นใต้ */
+    border-radius: 5px; /* มุมกลม */
+    transition: background-color 0.3s; /* ทำให้มีการเปลี่ยนสีเมื่อชี้ */
+    margin-left: auto; /* ช่วยจัดตำแหน่งไปทางขวา */
+}
+
+
+.btn:hover {
+    background-color: #0056b3; /* สีพื้นหลังเมื่อชี้ */
