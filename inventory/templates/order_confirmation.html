@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ยืนยันการสั่งซื้อ</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f8f9fa;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      width: 80%;
+      margin: 30px auto;
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .order-details {
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .order-details p {
+      font-size: 1.2rem;
+      color: #333;
+    }
+
+    .back-button {
+      text-align: center;
+    }
+
+    .back-button a {
+      font-size: 1.2rem;
+      color: #007bff;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .back-button a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>ยืนยันการสั่งซื้อ</h1>
+    <div class="order-details">
+      <p>คุณได้ทำการสั่งซื้อสินค้า: {{ order.product.product_name }}</p>
+      <p>จำนวน: {{ order.quantity }}</p>
+      <p>รวมราคา: {{ order.total_price }} บาท</p>
+    </div>
+    <div class="back-button">
+      <a href="{% url 'products' %}">กลับสู่รายการสินค้า</a>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>รายละเอียดสินค้า</title>
+</head>
+<body>
+  <h1>{{ product.product_name }}</h1>
+  <p>รหัสสินค้า: {{ product.product_code }}</p>
+  <p>ราคา: {{ product.price }}</p>
+  <p>จำนวนในสต็อก: {{ product.quantity }}</p>
+  <p>รายละเอียด: {{ product.description }}</p>
+  <img src="{{ product.image.url }}" alt="{{ product.product_name }}">
+  <a href="{% url 'products' %}">กลับไปยังรายการสินค้า</a>
+</body>
+</html>

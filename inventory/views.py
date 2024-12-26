@@ -1,20 +1,18 @@
 from .forms import OrderForm
 from .models import *
-from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.models import User
-from django.shortcuts import get_object_or_404
 from django.contrib.auth.forms import UserCreationForm
 from django import forms
 from django.contrib.auth import authenticate, login as auth_login
+from django.contrib.auth.decorators import login_required
+from .forms import ProductForm
+from .models import Product
+from django.shortcuts import render, redirect, get_object_or_404
 
 
 def home(request):
-    return render(request, 'list.html')
-
-def list_users(request):
-    users = User.objects.all()
-    return render(request, 'user_list.html', {'users': users})
+    return render(request, 'homepage.html')
 
 def create_user(request):
     if request.method == 'POST':
@@ -33,21 +31,11 @@ def category_view(request):
     return render(request, 'list.html', {'categories': categories})
 
 def my_view(request):
-    return render(request, 'list.html')
+    orders = Order.objects.all()
+    return render(request, 'list.html', {'orders': orders})
 
 def order_view(request):
-    orders = Order.objects.all()
-    return render(request, 'order1.html', {'orders': orders})  # เปลี่ยนเป็น order_list.html
-
-# ฟังก์ชันสำหรับแสดงสินค้า
-def products(request):
-    products = [
-        {'name': 'สินค้า A', 'price': 500, 'quantity': 10},
-        {'name': 'สินค้า B', 'price': 300, 'quantity': 5}
-    ]
-    return render(request, 'products.html', {'products': products})
-def product_view(request):
-    return render(request, 'product1.html')
+    return render(request, 'order1.html')
 
 def create_order(request):
     if request.method == 'POST':
@@ -100,22 +88,7 @@ def status_view(request):
     # ดึงข้อมูลที่เกี่ยวข้องกับสถานะ
     return render(request, 'status_view.html')
 
-def filter_view(request):
-    #def order_view(request):
-    # ดึงข้อมูลจาก Query Parameters
-    status_filter = request.GET.get('status', '')
-    sales_channel_filter = request.GET.get('sales_channel', '')
 
-    # กรองคำสั่งซื้อ
-    orders = Order.objects.all()
-
-    if status_filter:
-        orders = orders.filter(status=status_filter)
-
-    if sales_channel_filter:
-        orders = orders.filter(sales_channel=sales_channel_filter)
-
-    return render(request, 'filter_view.html', {'orders': orders})
 
 def update_status(request, order_id):
     # ดึงคำสั่งซื้อที่ต้องการอัปเดต
@@ -156,3 +129,103 @@ class CustomUserCreationForm(UserCreationForm):
         fields = ('username', 'email', 'password1', 'password2')
 
 
+@login_required
+def add_product(request):
+    if not request.user.is_staff:  # ตรวจสอบสิทธิ์ว่าเป็น Admin
+        messages.error(request, 'คุณไม่มีสิทธิ์ในการเพิ่มสินค้า')
+        return redirect('product_list')  # เปลี่ยนชื่อ URL เป็นหน้ารายการสินค้า
+
+    if request.method == 'POST':
+        form = ProductForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'เพิ่มสินค้าสำเร็จ')
+            return redirect('product_list')
+    else:
+        form = ProductForm()
+
+    return render(request, 'add_product.html', {'form': form})
+
+
+
+def products(request):
+    products = Product.objects.all()  # ดึงข้อมูลสินค้าทั้งหมด
+    return render(request, 'product1.html', {'products': products})
+
+def add_product(request):
+    if request.method == 'POST':
+        form = ProductForm(request.POST, request.FILES)  # รับข้อมูลจากฟอร์ม
+        if form.is_valid():
+            form.save()  # บันทึกสินค้าในฐานข้อมูล
+            return redirect('products')  # กลับไปยังหน้ารายการสินค้า
+    else:
+        form = ProductForm()
+    return render(request, 'add_product.html', {'form': form})
+
+
+def product_view(request, product_id):
+    try:
+        # ดึงข้อมูลสินค้าโดยใช้ product_id
+        product = Product.objects.get(id=product_id)
+    except Product.DoesNotExist:
+        product = None
+    return render(request, 'product_detail.html', {'product': product})
+
+@login_required
+def order_create(request, product_id):
+    # Retrieve the product by its ID
+    product = get_object_or_404(Product, id=product_id)
+
+    if request.method == 'POST':
+        # Check if a quantity is passed, otherwise default to 1
+        quantity = int(request.POST.get('quantity', 1))
+
+        # Create the new order
+        new_order = Order.objects.create(
+            customer=request.user,  # Use the logged-in user
+            items=product.product_name,
+            price=product.price,  # Include the price from the product
+            quantity=quantity,  # Use the selected quantity
+            status='รอดำเนินการ'  # Initial status (Pending)
+        )
+
+        # Redirect to the order confirmation page with the order's ID
+        return redirect('order_confirmation', order_id=new_order.id)
+
+    # If GET request, display the product details page
+    return render(request, 'order_create.html', {'product': product})
+
+
+def order_confirmation(request, order_id):
+    # Retrieve the order with the given order_id
+    order = get_object_or_404(Order, pk=order_id)
+
+    # You can also add a success message or flag to indicate the order has been confirmed
+    message = "สั่งซื้อแล้ว"
+
+    # Pass the order data and message to the template
+    return render(request, 'order_confirmation.html', {'order': order, 'message': message})
+
+
+def order_list(request):
+    orders = Order.objects.all()  # ดึงข้อมูลคำสั่งซื้อทั้งหมดจากฐานข้อมูล
+    return render(request, 'order1.html', {'orders': orders})
+
+
+#ฟังก์ชันการกรองข้อมูลในแถบการค้นหา
+def order_list(request):
+    query = request.GET.get('q')  # รับค่าค้นหาจากแถบค้นหา
+    if query:
+        orders = Order.objects.filter(product__icontains=query)  # กรองคำสั่งซื้อที่มีชื่อสินค้าเป็นคำค้น
+    else:
+        orders = Order.objects.all()
+    return render(request, 'order1.html', {'orders': orders})
+
+#ฟังก์ชันสำหรับการกรอง
+def order_list(request):
+    status_filter = request.GET.get('status')
+    if status_filter:
+        orders = Order.objects.filter(status=status_filter)
+    else:
+        orders = Order.objects.all()
+    return render(request, 'order1.html', {'orders': orders})

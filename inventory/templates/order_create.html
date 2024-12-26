@@ -1,0 +1,131 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>สั่งซื้อสินค้า</title>
+  <style>
+    /* Reset some default styles */
+    body, h1, p, a, button {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    /* Styling for the page */
+    body {
+      background-color: #f7f7f7;
+      color: #333;
+      line-height: 1.6;
+      font-size: 16px;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 960px;
+      margin: 50px auto;
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      font-size: 2rem;
+      text-align: center;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .product-info {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 30px;
+    }
+
+    .product-image {
+      width: 200px;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .product-details {
+      flex-grow: 1;
+      margin-left: 20px;
+    }
+
+    .product-name {
+      font-size: 1.6rem;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .product-description {
+      font-size: 1rem;
+      color: #555;
+      margin-top: 10px;
+    }
+
+    .order-button {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      background-color: #007bff;
+      color: white;
+      font-size: 1.2rem;
+      text-align: center;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 20px;
+    }
+
+    .order-button:hover {
+      background-color: #0056b3;
+    }
+
+    .back-button {
+      text-align: center;
+      margin-top: 30px;
+    }
+
+    .back-button a {
+      font-size: 1rem;
+      color: #007bff;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .back-button a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>สั่งซื้อสินค้า</h1>
+    <div class="product-info">
+      <img src="{% if product.image %}{{ product.image.url }}{% else %}{% static 'default_image.jpg' %}{% endif %}" alt="รูปสินค้า: {{ product.product_name }}" class="product-image">
+      <div class="product-details">
+        <p class="product-name">{{ product.product_name }}</p>
+        <p class="product-description">รายละเอียดสินค้า: {{ product.description }}</p>
+        <p class="product-price">ราคา: {{ product.price|floatformat:2 }} บาท</p>
+      </div>
+    </div>
+     <a href="{% url 'order_confirmation' order_id=product.id %}" class="order-link">
+    <button type="submit" class="order-button">ยืนยันการสั่งซื้อ</button>
+    </a>
+    <div class="back-button">
+      <a href="{% url 'products' %}">กลับสู่รายการสินค้า</a>
+    </div>
+  </div>
+</body>
+</html>

@@ -3,6 +3,8 @@ from .models import Order
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+from .models import Product
+
 
 STATUS_CHOICES = [
     ('pending', 'รอจัดส่ง'),
@@ -67,3 +69,18 @@ class CustomUserCreationForm(UserCreationForm):
         if password1 != password2:
             raise forms.ValidationError("รหัสผ่านไม่ตรงกัน")
         return cleaned_data
+
+#class ProductForm(forms.ModelForm):
+#    class Meta:
+ #       model = Product
+  #      fields = ['product_name', 'product_code', 'description', 'price', 'quantity']
+
+
+
+class ProductForm(forms.ModelForm):
+    class Meta:
+        model = Product
+        fields = ['product_code', 'product_name', 'description', 'quantity', 'image']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 3}),
+        }
