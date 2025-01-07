@@ -4,6 +4,8 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from .models import Product
+from .models import Profile
+
 
 
 STATUS_CHOICES = [
@@ -17,30 +19,28 @@ SALES_CHANNEL_CHOICES = [
     ('ออนไลน์', 'ออนไลน์'),
 ]
 
+
 class OrderForm(forms.ModelForm):
     class Meta:
         model = Order
-        fields = ['order_id', 'order_date', 'customer', 'sales_channel', 'destination', 'items', 'status']
-        labels = {
-            'order_id': 'รหัสคำสั่ง',
-            'order_date': 'วันที่',
-            'customer': 'ลูกค้า',
-            'sales_channel': 'ช่องทางการขาย',
-            'destination': 'ปลายทาง',
-            'items': 'จำนวนสินค้า',  # เปลี่ยนเป็น "จำนวนสินค้า"
-            'status': 'สถานะ',
-        }
-        widgets = {
-            'order_id': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'รหัสคำสั่ง'}),
-            'order_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'customer': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'ชื่อลูกค้า'}),
-            'sales_channel': forms.Select(choices=SALES_CHANNEL_CHOICES, attrs={'class': 'form-select'}),
-            'destination': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'ปลายทาง'}),
-            'items': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'placeholder': 'จำนวนสินค้า'}),
-            'status': forms.Select(choices=STATUS_CHOICES, attrs={'class': 'form-select'}),
-        }
+        fields = ['quantity']
 
+    def __init__(self, *args, **kwargs):
+        # รับ product ผ่าน kwargs
+        self.product = kwargs.pop('product', None)
+        super().__init__(*args, **kwargs)
 
+    def save(self, commit=True):
+        # คำนวณยอดรวมก่อนบันทึก
+        order = super().save(commit=False)
+        if self.product:
+            order.product_code = self.product.product_code
+            order.name = self.product.product_name
+            order.price = self.product.price
+            order.total = order.price * order.quantity
+        if commit:
+            order.save()
+        return order
 
 class LoginForm(AuthenticationForm):
     username = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'Username'}))
@@ -84,3 +84,13 @@ class ProductForm(forms.ModelForm):
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
         }
+
+class UserForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email']
+
+class ProfileForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        fields = ['phone_number', 'address', 'profile_picture']

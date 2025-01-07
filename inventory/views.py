@@ -7,12 +7,20 @@ from django import forms
 from django.contrib.auth import authenticate, login as auth_login
 from django.contrib.auth.decorators import login_required
 from .forms import ProductForm
-from .models import Product
+from .models import Product, Order
 from django.shortcuts import render, redirect, get_object_or_404
+from .models import Profile
+from .forms import UserForm, ProfileForm
+
+
+
 
 
 def home(request):
     return render(request, 'homepage.html')
+
+def graph_view(request):
+    return render(request, 'graph.html')
 
 def create_user(request):
     if request.method == 'POST':
@@ -31,11 +39,11 @@ def category_view(request):
     return render(request, 'list.html', {'categories': categories})
 
 def my_view(request):
-    orders = Order.objects.all()
-    return render(request, 'list.html', {'orders': orders})
+    return render(request, 'list.html')
 
 def order_view(request):
-    return render(request, 'order1.html')
+    orders = Order.objects.all()
+    return render(request, 'order1.html', {'orders': orders})
 
 def create_order(request):
     if request.method == 'POST':
@@ -171,61 +179,145 @@ def product_view(request, product_id):
         product = None
     return render(request, 'product_detail.html', {'product': product})
 
+
 @login_required
 def order_create(request, product_id):
-    # Retrieve the product by its ID
     product = get_object_or_404(Product, id=product_id)
 
     if request.method == 'POST':
-        # Check if a quantity is passed, otherwise default to 1
         quantity = int(request.POST.get('quantity', 1))
 
-        # Create the new order
-        new_order = Order.objects.create(
-            customer=request.user,  # Use the logged-in user
-            items=product.product_name,
-            price=product.price,  # Include the price from the product
-            quantity=quantity,  # Use the selected quantity
-            status='รอดำเนินการ'  # Initial status (Pending)
+        # ตรวจสอบจำนวนสินค้า
+        if quantity > product.quantity or quantity <= 0:
+            return render(request, 'order_create.html', {
+                'product': product,
+                'error_message': 'จำนวนสินค้าที่ต้องการสั่งซื้อไม่ถูกต้อง',
+            })
+
+        # เก็บจำนวนสินค้าใน session
+        request.session['quantity'] = quantity
+
+        # Redirect ไปยังหน้าการยืนยัน
+        return redirect('order_confirmation', product_id=product.id)
+
+    return render(request, 'order_create.html', {
+        'product': product,
+    })
+
+
+
+@login_required
+def order_confirmation(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+
+    if request.method == 'POST':
+        # Get quantity from session or pass directly in POST request
+        quantity = request.session.get('quantity', 1)
+
+        # ตรวจสอบจำนวนสินค้า
+        if quantity > product.quantity:
+            return render(request, 'order_confirmation.html', {
+                'product': product,
+                'quantity': quantity,
+                'total_price': product.price * quantity,
+                'error_message': 'จำนวนสินค้ามากกว่าที่มีในสต็อก',
+            })
+
+        # ลดจำนวนสินค้าคงเหลือในสต็อก
+        product.quantity -= quantity
+        product.save()
+
+        # สร้างคำสั่งซื้อใหม่
+        Order.objects.create(
+            product_name=product.product_name,
+            price=product.price,
+            quantity=quantity,
+            status='pending',  # Pending order
+            image=product.image,
         )
 
-        # Redirect to the order confirmation page with the order's ID
-        return redirect('order_confirmation', order_id=new_order.id)
+        # Redirect to success page
+        return redirect('order_success')
 
-    # If GET request, display the product details page
-    return render(request, 'order_create.html', {'product': product})
+    # สำหรับ GET request ให้แสดงหน้า order_confirmation.html
+    quantity = request.session.get('quantity', 1)
+    return render(request, 'order_confirmation.html', {
+        'product': product,
+        'quantity': quantity,
+        'total_price': product.price * quantity,
+    })
 
 
-def order_confirmation(request, order_id):
-    # Retrieve the order with the given order_id
-    order = get_object_or_404(Order, pk=order_id)
 
-    # You can also add a success message or flag to indicate the order has been confirmed
-    message = "สั่งซื้อแล้ว"
 
-    # Pass the order data and message to the template
-    return render(request, 'order_confirmation.html', {'order': order, 'message': message})
+def order_success(request):
+    return render(request, 'order_success.html')
+
+
 
 
 def order_list(request):
-    orders = Order.objects.all()  # ดึงข้อมูลคำสั่งซื้อทั้งหมดจากฐานข้อมูล
-    return render(request, 'order1.html', {'orders': orders})
+    orders = Order.objects.prefetch_related('items').all()  # ดึงคำสั่งซื้อพร้อมสินค้า
+    return render(request, 'order_list.html', {'orders': orders})
 
 
-#ฟังก์ชันการกรองข้อมูลในแถบการค้นหา
-def order_list(request):
-    query = request.GET.get('q')  # รับค่าค้นหาจากแถบค้นหา
-    if query:
-        orders = Order.objects.filter(product__icontains=query)  # กรองคำสั่งซื้อที่มีชื่อสินค้าเป็นคำค้น
+@login_required
+def profile(request):
+    try:
+        profile = Profile.objects.get(user=request.user)
+    except Profile.DoesNotExist:
+        profile = None
+
+    if request.method == 'POST':
+        if profile:
+            form = ProfileForm(request.POST, instance=profile)
+        else:
+            form = ProfileForm(request.POST)
+
+        if form.is_valid():
+            profile = form.save(commit=False)
+            profile.user = request.user
+            profile.save()
+            return redirect('profile')  # กลับมาที่หน้าชื่อโปรไฟล์
+
     else:
-        orders = Order.objects.all()
-    return render(request, 'order1.html', {'orders': orders})
+        if profile:
+            form = ProfileForm(instance=profile)
+        else:
+            form = ProfileForm()
 
-#ฟังก์ชันสำหรับการกรอง
-def order_list(request):
-    status_filter = request.GET.get('status')
-    if status_filter:
-        orders = Order.objects.filter(status=status_filter)
+    return render(request, 'profile.html', {'form': form})
+
+@login_required
+def profile_view(request):
+    if request.method == 'POST':
+        user_form = UserForm(request.POST, instance=request.user)
+        profile_form = ProfileForm(request.POST, request.FILES, instance=request.user.profile)
+        if user_form.is_valid() and profile_form.is_valid():
+            user_form.save()
+            profile_form.save()
+            return redirect('profile')
     else:
-        orders = Order.objects.all()
-    return render(request, 'order1.html', {'orders': orders})
+        user_form = UserForm(instance=request.user)
+        profile_form = ProfileForm(instance=request.user.profile)
+
+    context = {
+        'user_form': user_form,
+        'profile_form': profile_form,
+    }
+    return render(request, 'inventory/profile.html', context)
+
+
+
+
+
+def cancel_order(request, order_id):
+    # ตรวจสอบคำสั่งซื้อที่ต้องการยกเลิก
+    order = Order.objects.get(pk=order_id)
+
+    # เปลี่ยนสถานะคำสั่งซื้อเป็นยกเลิก
+    order.status = 'ยกเลิก'
+    order.save()
+
+    # เปลี่ยนเส้นทางกลับไปยังหน้าแสดงรายการคำสั่งซื้อ
+    return redirect('order_view')  # 'order_view' เป็นชื่อ URL ของหน้าคำสั่งซื้อ

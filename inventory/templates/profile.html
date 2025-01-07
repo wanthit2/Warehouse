@@ -1,0 +1,11 @@
+<!-- templates/myapp/profile.html -->
+{% extends "base.html" %}
+{% block content %}
+<h2>โปรไฟล์ของคุณ</h2>
+<form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ user_form.as_p }}
+    {{ profile_form.as_p }}
+    <button type="submit">บันทึก</button>
+</form>
+{% endblock %}
