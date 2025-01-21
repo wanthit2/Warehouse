@@ -5,7 +5,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from .models import Product
 from .models import Profile
-
+from .models import UserProfile
 
 
 STATUS_CHOICES = [
@@ -94,3 +94,8 @@ class ProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
         fields = ['phone_number', 'address', 'profile_picture']
+
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = UserProfile
+        fields = ['phone_number', 'profile_picture']

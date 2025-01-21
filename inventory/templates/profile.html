@@ -1,11 +1,108 @@
-<!-- templates/myapp/profile.html -->
-{% extends "base.html" %}
-{% block content %}
-<h2>โปรไฟล์ของคุณ</h2>
-<form method="POST" enctype="multipart/form-data">
-    {% csrf_token %}
-    {{ user_form.as_p }}
-    {{ profile_form.as_p }}
-    <button type="submit">บันทึก</button>
-</form>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>โปรไฟล์ของคุณ</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f7fc;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .container {
+            width: 80%;
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .profile-image {
+            display: block;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            border: 3px solid #ddd;
+        }
+
+        .profile-info {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .profile-info p {
+            font-size: 18px;
+            color: #555;
+            margin: 5px 0;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .buttons a button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: white;
+            transition: background-color 0.3s;
+        }
+
+        .buttons a button:hover {
+            background-color: #45a049;
+        }
+
+        .buttons a button.back {
+            background-color: #007bff;
+        }
+
+        .buttons a button.back:hover {
+            background-color: #0056b3;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>โปรไฟล์ของคุณ</h1>
+
+        <!-- แสดงรูปโปรไฟล์ -->
+        <img src="{% if profile.profile_picture %}{{ profile.profile_picture.url }}{% else %}/static/nomol-avatar.jpg{% endif %}" alt="โปรไฟล์" class="profile-image" width="150" height="150">
+        <p>{% if not profile.profile_picture %}คุณยังไม่มีรูปโปรไฟล์{% endif %}</p>
+
+
+
+        <!-- แสดงข้อมูลโปรไฟล์ -->
+        <div class="profile-info">
+            <p><strong>ชื่อผู้ใช้:</strong> {{ profile.user.username }}</p>
+            <p><strong>อีเมล์:</strong> {{ profile.user.email }}</p>
+            <p><strong>ข้อมูลเพิ่มเติม:</strong> {{ profile.some_field }}</p> <!-- เพิ่มฟิลด์ที่ต้องการแสดง -->
+        </div>
+
+        <!-- ปุ่มกลับหน้าแรกและแก้ไขโปรไฟล์ -->
+        <div class="buttons">
+            <a href="{% url 'home1' %}">
+                <button class="back">กลับสู่หน้าหลัก</button>
+            </a>
+            <a href="{% url 'edit_profile' %}">
+                <button>แก้ไขโปรไฟล์</button>
+            </a>
+        </div>
+    </div>
+</body>
+</html>

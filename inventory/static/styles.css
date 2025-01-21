@@ -58,6 +58,30 @@
 .sidebar .item-card span {
   text-align: center;
 }
+/* Home Icon */
+.sidebar .home-icon {
+  position: absolute; /* ทำให้สามารถจัดวางในตำแหน่งแบบอิสระ */
+  bottom: 20px; /* อยู่ชิดด้านล่างของ sidebar */
+  left: 20px; /* อยู่ชิดด้านซ้ายของ sidebar */
+  background-color: #000066; /* สีพื้นหลัง */
+  color: white; /* สีตัวอักษร */
+  width: 50px; /* ความกว้าง */
+  height: 50px; /* ความสูง */
+  display: flex; /* จัดเรียงเนื้อหาภายใน */
+  align-items: center; /* จัดให้อยู่ตรงกลางในแนวตั้ง */
+  justify-content: center; /* จัดให้อยู่ตรงกลางในแนวนอน */
+  border-radius: 50%; /* มุมโค้งแบบวงกลม */
+  text-decoration: none; /* เอาเส้นใต้ของลิงก์ออก */
+  font-size: 20px; /* ขนาดของไอคอน */
+  transition: transform 0.3s, background-color 0.3s; /* เพิ่มเอฟเฟกต์เปลี่ยนสี */
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); /* เงา */
+}
+
+.sidebar .home-icon:hover {
+  background-color: #0031c9; /* สีพื้นหลังเมื่อชี้ */
+  transform: scale(1.1); /* ขยายขนาดเล็กน้อยเมื่อชี้ */
+}
+
  .content {
      flex-grow: 1;
      padding: 20px;

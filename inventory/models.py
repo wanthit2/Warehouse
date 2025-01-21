@@ -41,6 +41,8 @@ class Product(models.Model):
     def total_value(self):
         return self.price * self.quantity  # ราคารวมของสินค้าที่มีในสต็อก
 
+from django.contrib.auth.models import User  # นำเข้า User จาก Django
+
 class Order(models.Model):
     order_id = models.AutoField(primary_key=True, verbose_name='ลำดับ')
     product_name = models.CharField(max_length=255, verbose_name='ชื่อสินค้า', null=True, blank=True)
@@ -48,6 +50,7 @@ class Order(models.Model):
     quantity = models.PositiveIntegerField(verbose_name='จำนวน')
     status = models.CharField(max_length=50, verbose_name='สถานะ', default='Pending')
     image = models.ImageField(upload_to='product_images/', verbose_name='รูปสินค้า', null=True, blank=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders', verbose_name='ผู้ใช้งาน', default=1)  # กำหนดค่า default เป็นผู้ใช้ที่มี id = 1
 
     @property
     def total_price(self):
@@ -55,6 +58,7 @@ class Order(models.Model):
 
     def __str__(self):
         return self.product_name
+
 
 
 @login_required  # บังคับให้ผู้ใช้ต้องล็อกอินก่อนสร้างคำสั่งซื้อ
@@ -93,3 +97,12 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"{self.user.username} Profile"
+
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
+
+    def __str__(self):
+        return self.user.username

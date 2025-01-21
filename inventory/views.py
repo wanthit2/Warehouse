@@ -1,20 +1,21 @@
-from .forms import OrderForm
+from .forms import OrderForm, UserProfileForm
 from .models import *
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from django import forms
-from django.contrib.auth import authenticate, login as auth_login
+from django.contrib.auth import authenticate, login as auth_login, login
 from django.contrib.auth.decorators import login_required
 from .forms import ProductForm
 from .models import Product, Order
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Profile
 from .forms import UserForm, ProfileForm
+from .models import UserProfile
 
 
-
-
+def home1(request):
+    return render(request, 'home.html')
 
 def home(request):
     return render(request, 'homepage.html')
@@ -41,8 +42,12 @@ def category_view(request):
 def my_view(request):
     return render(request, 'list.html')
 
+@login_required
 def order_view(request):
-    orders = Order.objects.all()
+    if request.user.is_authenticated:  # ตรวจสอบว่าเป็นผู้ใช้ที่ล็อกอิน
+        orders = Order.objects.filter(user=request.user)  # ดึงคำสั่งซื้อที่เกี่ยวข้องกับผู้ใช้ที่ล็อกอิน
+    else:
+        orders = []  # หากผู้ใช้ไม่ได้ล็อกอิน ให้แสดงคำสั่งซื้อเป็นค่าว่าง
     return render(request, 'order1.html', {'orders': orders})
 
 def create_order(request):
@@ -63,14 +68,6 @@ def delete_order(request, order_id):
     messages.success(request, 'ลบคำสั่งซื้อเรียบร้อยแล้ว')  # แจ้งข้อความ
     return redirect('my_view')  # กลับไปยังหน้ารายการคำสั่งซื้อ
 
-def other_view(request):
-    return render(request, 'order1.html')  # แทนที่ '.html' ด้วยชื่อไฟล์ของคุณ
-
-def homepage(request):
-    return render(request, 'homepage.html')
-
-def login_page(request):
-    return render(request, 'login.html')
 
 def login_view(request):
     if request.method == 'POST':
@@ -80,12 +77,24 @@ def login_view(request):
         if user is not None:
             auth_login(request, user)  # ใช้ฟังก์ชัน login ที่มาจาก django.contrib.auth
             messages.success(request, 'เข้าสู่ระบบสำเร็จ')
-            return redirect('my_view')
+            return redirect('home1')
         else:
             messages.error(request, 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง')
     return render(request, 'login.html')
 
+def custom_login(request):
+    if request.method == 'POST':
+        username = request.POST['username']
+        password = request.POST['password']
+        user = authenticate(request, username=username, password=password)
 
+        if user is not None:
+            login(request, user)
+            # ตรวจสอบสิทธิ์ผู้ใช้
+            if user.is_staff:
+                return redirect('/admin/')
+            return redirect('/home1/')
+    return render(request, 'login.html')
 
 
 def sales_view(request):
@@ -204,8 +213,6 @@ def order_create(request, product_id):
         'product': product,
     })
 
-
-
 @login_required
 def order_confirmation(request, product_id):
     product = get_object_or_404(Product, id=product_id)
@@ -227,16 +234,17 @@ def order_confirmation(request, product_id):
         product.quantity -= quantity
         product.save()
 
-        # สร้างคำสั่งซื้อใหม่
+        # สร้างคำสั่งซื้อใหม่ และเชื่อมโยงกับผู้ใช้ที่ล็อกอินอยู่
         Order.objects.create(
             product_name=product.product_name,
             price=product.price,
             quantity=quantity,
-            status='pending',  # Pending order
+            status='pending',  # คำสั่งซื้อที่ยังไม่เสร็จสมบูรณ์
             image=product.image,
+            user=request.user,  # เชื่อมโยงกับผู้ใช้งานที่ล็อกอินอยู่
         )
 
-        # Redirect to success page
+        # Redirect ไปยังหน้าคำสั่งซื้อสำเร็จ
         return redirect('order_success')
 
     # สำหรับ GET request ให้แสดงหน้า order_confirmation.html
@@ -261,53 +269,63 @@ def order_list(request):
     return render(request, 'order_list.html', {'orders': orders})
 
 
+
 @login_required
 def profile(request):
     try:
-        profile = Profile.objects.get(user=request.user)
-    except Profile.DoesNotExist:
-        profile = None
+        user_profile = UserProfile.objects.get(user=request.user)
+    except UserProfile.DoesNotExist:
+        return redirect('create_profile')  # Redirect if profile doesn't exist
 
+    return render(request, 'profile.html', {'profile': user_profile})
+
+@login_required
+def create_profile(request):
     if request.method == 'POST':
-        if profile:
-            form = ProfileForm(request.POST, instance=profile)
-        else:
-            form = ProfileForm(request.POST)
-
+        form = UserProfileForm(request.POST, request.FILES)
         if form.is_valid():
             profile = form.save(commit=False)
             profile.user = request.user
             profile.save()
-            return redirect('profile')  # กลับมาที่หน้าชื่อโปรไฟล์
-
+            return redirect('profile')  # Redirect to the profile page
     else:
-        if profile:
-            form = ProfileForm(instance=profile)
-        else:
-            form = ProfileForm()
+        form = UserProfileForm()
 
-    return render(request, 'profile.html', {'form': form})
+    return render(request, 'create_profile.html', {'form': form})
+
+@login_required
+def edit_profile(request):
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+    except UserProfile.DoesNotExist:
+        user_profile = None
+
+    if request.method == 'POST':
+        form = UserProfileForm(request.POST, request.FILES, instance=user_profile)
+        if form.is_valid():
+            form.save()
+            return redirect('profile')  # เปลี่ยนเส้นทางไปยังหน้าโปรไฟล์หลังจากบันทึก
+    else:
+        form = UserProfileForm(instance=user_profile)
+
+    return render(request, 'edit_profile.html', {'form': form})
 
 @login_required
 def profile_view(request):
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+    except UserProfile.DoesNotExist:
+        user_profile = None
+
     if request.method == 'POST':
-        user_form = UserForm(request.POST, instance=request.user)
-        profile_form = ProfileForm(request.POST, request.FILES, instance=request.user.profile)
-        if user_form.is_valid() and profile_form.is_valid():
-            user_form.save()
-            profile_form.save()
-            return redirect('profile')
+        form = UserProfileForm(request.POST, request.FILES, instance=user_profile)
+        if form.is_valid():
+            form.save()  # Save profile with the new image if available
+            return redirect('profile')  # Redirect to the profile page
     else:
-        user_form = UserForm(instance=request.user)
-        profile_form = ProfileForm(instance=request.user.profile)
+        form = UserProfileForm(instance=user_profile)
 
-    context = {
-        'user_form': user_form,
-        'profile_form': profile_form,
-    }
-    return render(request, 'inventory/profile.html', context)
-
-
+    return render(request, 'profile.html', {'form': form, 'user_profile': user_profile})
 
 
 
@@ -321,3 +339,26 @@ def cancel_order(request, order_id):
 
     # เปลี่ยนเส้นทางกลับไปยังหน้าแสดงรายการคำสั่งซื้อ
     return redirect('order_view')  # 'order_view' เป็นชื่อ URL ของหน้าคำสั่งซื้อ
+
+
+@login_required
+def admin_login(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None and user.is_staff:
+            login(request, user)
+            return redirect('admin')
+        else:
+            messages.error(request, "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง หรือคุณไม่มีสิทธิ์เข้าถึง")
+
+    return redirect('admin_login')
+
+@login_required
+def admin_order_list(request):
+    orders = Order.objects.prefetch_related('items').all()
+    products = Product.objects.all()
+
+    return render(request, 'admin_order_list.html', {'orders': orders, 'products': products})
