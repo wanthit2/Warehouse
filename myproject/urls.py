@@ -23,7 +23,6 @@ from inventory import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('inventory.urls')),
-
 ]
 
 # Add static URL pattern only once

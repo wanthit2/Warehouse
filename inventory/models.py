@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
-
+from django.contrib.auth.models import User  # นำเข้า User จาก Django
 
 #class Product(models.Model):
  #   name = models.CharField(max_length=100)
@@ -41,7 +41,7 @@ class Product(models.Model):
     def total_value(self):
         return self.price * self.quantity  # ราคารวมของสินค้าที่มีในสต็อก
 
-from django.contrib.auth.models import User  # นำเข้า User จาก Django
+
 
 class Order(models.Model):
     order_id = models.AutoField(primary_key=True, verbose_name='ลำดับ')
@@ -50,7 +50,7 @@ class Order(models.Model):
     quantity = models.PositiveIntegerField(verbose_name='จำนวน')
     status = models.CharField(max_length=50, verbose_name='สถานะ', default='Pending')
     image = models.ImageField(upload_to='product_images/', verbose_name='รูปสินค้า', null=True, blank=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders', verbose_name='ผู้ใช้งาน', default=1)  # กำหนดค่า default เป็นผู้ใช้ที่มี id = 1
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders', verbose_name='ผู้ใช้งาน')
 
     @property
     def total_price(self):
@@ -100,7 +100,7 @@ class Profile(models.Model):
 
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
 

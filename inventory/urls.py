@@ -1,7 +1,11 @@
 from django.urls import path
 from . import views
 from django.contrib.auth import views as auth_views
+from django.contrib.auth.decorators import user_passes_test
 
+# ฟังก์ชันเช็คว่าเป็นแอดมินหรือไม่
+def admin_required(function):
+    return user_passes_test(lambda u: u.is_staff)(function)
 
 urlpatterns = [
     path('homepage/', views.home, name='homepage'),
@@ -33,4 +37,11 @@ urlpatterns = [
     path('create_profile/', views.create_profile, name='create_profile'),
     path('edit_profile/', views.edit_profile, name='edit_profile'),
     path('logout/', auth_views.LogoutView.as_view(next_page='homepage'), name='logout'),
+    path('admin/orders/', views.admin_orders, name='admin_orders'),
+    path('admin/orders/edit/<int:order_id>/', views.edit_order, name='edit_order'),
+    path('admin/', views.admin_dashboard, name='admin_dashboard'),
+    path('admin/orders/', views.admin_orders, name='admin_orders'),
+    path('admin/orders/edit/<int:order_id>/', views.edit_order, name='edit_order'),
+    path('admin/orders/add/', views.add_order, name='add_order'),
+    path('admin/orders/delete/<int:order_id>/', views.delete_order, name='delete_order'),
 ]

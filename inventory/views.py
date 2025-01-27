@@ -13,7 +13,6 @@ from .models import Profile
 from .forms import UserForm, ProfileForm
 from .models import UserProfile
 
-
 def home1(request):
     return render(request, 'home.html')
 
@@ -77,7 +76,11 @@ def login_view(request):
         if user is not None:
             auth_login(request, user)  # ใช้ฟังก์ชัน login ที่มาจาก django.contrib.auth
             messages.success(request, 'เข้าสู่ระบบสำเร็จ')
-            return redirect('home1')
+            # ตรวจสอบว่า user เป็นแอดมินหรือไม่
+            if user.is_staff:
+                return redirect('admin_dashboard')  # URL ของหน้าแอดมิน
+            else:
+                return redirect('home1')  # URL ของหน้าผู้ใช้ทั่วไป
         else:
             messages.error(request, 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง')
     return render(request, 'login.html')
@@ -362,3 +365,53 @@ def admin_order_list(request):
     products = Product.objects.all()
 
     return render(request, 'admin_order_list.html', {'orders': orders, 'products': products})
+
+
+def admin_orders(request):
+    orders = Order.objects.all()  # ดึงข้อมูลคำสั่งซื้อทั้งหมด
+    return render(request, 'inventory/admin_orders.html', {'orders': orders})
+
+def edit_order(request, order_id):
+    order = Order.objects.get(id=order_id)
+    # ฟอร์มการแก้ไขคำสั่งซื้อ
+    if request.method == 'POST':
+        order.status = request.POST['status']
+        order.save()
+    return render(request, 'inventory/edit_order.html', {'order': order})
+
+def admin_dashboard(request):
+    return render(request, 'admin_dashboard.html')
+
+# หน้าแสดงรายการคำสั่งซื้อ
+def admin_orders(request):
+    orders = Order.objects.all()
+    return render(request, 'admin_orders.html', {'orders': orders})
+
+# ฟังก์ชันเพิ่มคำสั่งซื้อ
+def add_order(request):
+    if request.method == 'POST':
+        form = OrderForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('admin_orders')
+    else:
+        form = OrderForm()
+    return render(request, 'add_order.html', {'form': form})
+
+# ฟังก์ชันแก้ไขคำสั่งซื้อ
+def edit_order(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    if request.method == 'POST':
+        form = OrderForm(request.POST, instance=order)
+        if form.is_valid():
+            form.save()
+            return redirect('admin_orders')
+    else:
+        form = OrderForm(instance=order)
+    return render(request, 'edit_order.html', {'form': form, 'order': order})
+
+# ฟังก์ชันลบคำสั่งซื้อ
+def delete_order(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    order.delete()
+    return redirect('admin_orders')
