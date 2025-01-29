@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เพิ่มสินค้า</title>
+</head>
+<body>
+    <h1>เพิ่มสินค้าใหม่</h1>
+    <form method="POST">
+        {% csrf_token %}
+        <!-- ฟอร์มสำหรับกรอกข้อมูลสินค้า -->
+        <label for="product_name">ชื่อสินค้า:</label>
+        <input type="text" id="product_name" name="product_name" required><br><br>
+
+        <label for="category">หมวดหมู่:</label>
+        <input type="text" id="category" name="category" required><br><br>
+
+        <label for="price">ราคาต่อหน่วย:</label>
+        <input type="number" id="price" name="price" required><br><br>
+
+        <label for="quantity">จำนวน:</label>
+        <input type="number" id="quantity" name="quantity" required><br><br>
+
+        <button type="submit">เพิ่มสินค้า</button>
+    </form>
+</body>
+</html>

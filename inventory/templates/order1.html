@@ -13,10 +13,12 @@
     <div class="container">
         <!-- Sidebar -->
         <aside class="sidebar">
+
             <a href="{% url 'my_view' %}" class="item-card"><i class="bi bi-bar-chart-line"></i> รายการ</a>
             <a href="{% url 'order_view' %}" class="item-card"><i class="bi bi-clipboard-data"></i> คำสั่งซื้อ</a>
             <a href="{% url 'graph_view' %}" class="item-card"><i class="bi bi-pie-chart"></i> กราฟ</a>
             <a href="{% url 'products' %}" class="item-card"><i class="bi bi-box-seam"></i> สินค้า</a>
+            <a href="{% url 'stock_view' %}" class="item-card"><i class="bi bi-box-seam"></i> สต๊อก</a>
             <a href="{% url 'home1' %}" class="home-icon"><i class="bi bi-house"></i></a>
         </aside>
 
@@ -25,9 +27,10 @@
             <h1>คำสั่งซื้อ</h1>
 
             <div class="search-bar">
-                <label>
-                    <input type="text" placeholder="ค้นหา...">
-                </label>
+                <form method="GET" action="{% url 'order_view' %}" class="search-bar">
+                     <input type="text" name="q" value="{{ request.GET.q }}" placeholder="ค้นหาคำสั่งซื้อ...">
+                     <button type="submit" class="btn btn-primary">ค้นหา</button>
+                </form>
             </div>
 
             <div style="display: flex; justify-content: flex-end;">

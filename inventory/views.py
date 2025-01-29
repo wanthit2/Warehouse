@@ -12,6 +12,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .models import Profile
 from .forms import UserForm, ProfileForm
 from .models import UserProfile
+from .models import Store, Stock
+from .forms import StockForm
+from .forms import SearchStockForm
+
 
 def home1(request):
     return render(request, 'home.html')
@@ -39,15 +43,34 @@ def category_view(request):
     return render(request, 'list.html', {'categories': categories})
 
 def my_view(request):
-    return render(request, 'list.html')
+    query = request.GET.get('q', '')  # รับค่าค้นหาจาก GET parameter
+    products = Product.objects.all()  # ดึงข้อมูลสินค้าทั้งหมด
+
+    # ถ้ามีการค้นหา
+    if query:
+        products = products.filter(name__icontains=query)  # กรองชื่อสินค้าตามที่ค้นหา
+
+    return render(request, 'list.html', {'products': products, 'query': query})
 
 @login_required
 def order_view(request):
-    if request.user.is_authenticated:  # ตรวจสอบว่าเป็นผู้ใช้ที่ล็อกอิน
-        orders = Order.objects.filter(user=request.user)  # ดึงคำสั่งซื้อที่เกี่ยวข้องกับผู้ใช้ที่ล็อกอิน
-    else:
-        orders = []  # หากผู้ใช้ไม่ได้ล็อกอิน ให้แสดงคำสั่งซื้อเป็นค่าว่าง
-    return render(request, 'order1.html', {'orders': orders})
+    query = request.GET.get('q', '')  # รับค่าค้นหาจาก GET
+    orders = Order.objects.filter(user=request.user)  # ดึงคำสั่งซื้อของผู้ใช้ที่ล็อกอิน
+
+    if query:
+        orders = orders.filter(product_name__icontains=query)  # ค้นหาคำสั่งซื้อที่มีชื่อสินค้าตรงกับคำค้นหา
+
+    return render(request, 'order1.html', {'orders': orders, 'query': query})
+
+def product_detail_view(request, id):
+    product = get_object_or_404(Product, id=id)
+    return render(request, 'product_detail.html', {'product': product})
+
+def edit_product(request, id):
+    product = get_object_or_404(Product, id=id)
+    # Logic for editing the product
+    return render(request, 'edit_product.html', {'product': product})
+
 
 def create_order(request):
     if request.method == 'POST':
@@ -78,27 +101,35 @@ def login_view(request):
             messages.success(request, 'เข้าสู่ระบบสำเร็จ')
             # ตรวจสอบว่า user เป็นแอดมินหรือไม่
             if user.is_staff:
-                return redirect('admin_dashboard')  # URL ของหน้าแอดมิน
+                return redirect('home1')  # URL ของหน้าแอดมิน
             else:
                 return redirect('home1')  # URL ของหน้าผู้ใช้ทั่วไป
         else:
             messages.error(request, 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง')
     return render(request, 'login.html')
 
+
 def custom_login(request):
     if request.method == 'POST':
         username = request.POST['username']
         password = request.POST['password']
+
+        # ตรวจสอบข้อมูลผู้ใช้
         user = authenticate(request, username=username, password=password)
 
         if user is not None:
             login(request, user)
-            # ตรวจสอบสิทธิ์ผู้ใช้
+            # ตรวจสอบสิทธิ์ผู้ใช้ (ถ้าเป็น admin จะไปหน้า /admin/)
             if user.is_staff:
                 return redirect('/admin/')
-            return redirect('/home1/')
+            else:
+                # ผู้ใช้ปกติจะไปหน้า /home1/
+                return redirect('/home1/')
+        else:
+            # หากไม่พบผู้ใช้ให้แจ้งข้อผิดพลาด
+            messages.error(request, "Username หรือ Password ไม่ถูกต้อง")
+            return redirect('login')  # กลับไปที่หน้า login
     return render(request, 'login.html')
-
 
 def sales_view(request):
     # ดึงข้อมูลที่เกี่ยวข้องกับฝ่ายขาย
@@ -415,3 +446,114 @@ def delete_order(request, order_id):
     order = get_object_or_404(Order, id=order_id)
     order.delete()
     return redirect('admin_orders')
+
+def store_list(request):
+    stores = Store.objects.all()
+    return render(request, 'store_list.html', {'stores': stores})
+
+# หน้าแสดงสต็อกสินค้าของร้าน
+def store_stock(request, store_id):
+    store = get_object_or_404(Store, id=store_id)
+    stocks = Stock.objects.filter(store=store)
+    return render(request, 'store_stock.html', {'store': store, 'stocks': stocks})
+
+# เพิ่มสินค้าในสต็อก
+def add_stock(request, store_id):
+    store = get_object_or_404(Store, id=store_id)
+    if request.method == 'POST':
+        form = StockForm(request.POST)
+        if form.is_valid():
+            stock = form.save(commit=False)
+            stock.store = store  # กำหนดร้านที่สินค้าต้องการเพิ่ม
+            stock.save()
+            return redirect('store_stock', store_id=store.id)
+    else:
+        form = StockForm()
+    return render(request, 'add_stock.html', {'form': form, 'store': store})
+
+# แก้ไขสต็อกสินค้า
+def edit_stock(request, stock_id):
+    stock = get_object_or_404(Stock, id=stock_id)
+    if request.method == 'POST':
+        form = StockForm(request.POST, instance=stock)
+        if form.is_valid():
+            form.save()
+            return redirect('store_stock', store_id=stock.store.id)
+    else:
+        form = StockForm(instance=stock)
+    return render(request, 'edit_stock.html', {'form': form, 'stock': stock})
+
+# ลบสต็อกสินค้า
+def delete_stock(request, stock_id):
+    stock = get_object_or_404(Stock, id=stock_id)
+    store_id = stock.store.id
+    stock.delete()
+    return redirect('store_stock', store_id=store_id)
+
+
+def store_detail(request, store_id):
+    store = get_object_or_404(Store, id=store_id)
+    products = Product.objects.filter(store=store)  # กรองสินค้าของร้านนั้นๆ
+    return render(request, 'store_detail.html', {'store': store, 'products': products})
+
+
+def store_list(request):
+    stores = Store.objects.all()  # ดึงข้อมูลร้านทั้งหมด
+    return render(request, 'store_list.html', {'stores': stores})
+
+
+@login_required
+def store_list(request):
+    stores = Store.objects.all()
+    return render(request, 'store_list.html', {'stores': stores})
+
+@login_required
+def store_detail(request, store_id):
+    store = get_object_or_404(Store, id=store_id)
+    products = Product.objects.filter(store=store)
+    return render(request, 'store_detail.html', {'store': store, 'products': products})
+
+
+
+def stock_view(request):
+    form = SearchStockForm(request.GET)
+    stock_items = Stock.objects.all()
+
+    # ตรวจสอบว่ามีการค้นหาหรือไม่
+    if form.is_valid():
+        query = form.cleaned_data['query']
+        if query:
+            stock_items = stock_items.filter(product_name__icontains=query)  # ใช้การค้นหาที่ไม่สนใจตัวพิมพ์
+
+    return render(request, 'stock.html', {
+        'form': form,
+        'stock': stock_items
+    })
+
+def create_stock(request):
+    # คำสั่งหรือการกระทำที่ต้องการทำเมื่อไปยังหน้าสร้างสินค้า
+    return render(request, 'create_stock.html')
+
+
+def update_stock(request):
+    if request.method == 'POST':
+        product_id = request.POST.get('product_id')
+        quantity = int(request.POST.get('quantity'))
+
+        # ค้นหาสินค้าที่ต้องการอัปเดต
+        product = Product.objects.get(id=product_id)
+
+        # อัปเดตจำนวนสินค้า
+        product.stock_quantity += quantity
+        product.save()
+
+        # รีไดเรกต์ไปที่หน้า stock view หรือหน้าอื่น
+        return redirect('stock_view')
+
+    # ถ้าเป็น GET request
+    return render(request, 'update_stock.html')
+
+
+def create_product(request):
+    # โค้ดสำหรับการสร้างสินค้า
+    return render(request, 'create_product.html')

@@ -44,4 +44,25 @@ urlpatterns = [
     path('admin/orders/edit/<int:order_id>/', views.edit_order, name='edit_order'),
     path('admin/orders/add/', views.add_order, name='add_order'),
     path('admin/orders/delete/<int:order_id>/', views.delete_order, name='delete_order'),
+
+    #adminstock
+    path('admin/stores/', views.store_list, name='store_list'),  # แสดงร้านค้าทั้งหมด
+    path('admin/stores/<int:store_id>/stock/', views.store_stock, name='store_stock'),  # แสดงสต็อกของร้าน
+    path('admin/stores/<int:store_id>/stock/add/', views.add_stock, name='add_stock'),  # เพิ่มสินค้าในสต็อก
+    path('admin/stores/stock/edit/<int:stock_id>/', views.edit_stock, name='edit_stock'),  # แก้ไขสต็อก
+    path('admin/stores/stock/delete/<int:stock_id>/', views.delete_stock, name='delete_stock'),  # ลบสินค้าในสต็อก
+    path('store/<int:store_id>/', views.store_detail, name='store_detail'),
+    #URL ของร้าน
+    path('stores/', views.store_list, name='store_list'),
+    path('store/<int:store_id>/', views.store_detail, name='store_detail'),
+
+    #stock
+    path('stock_view/', views.stock_view, name='stock_view'),
+    path('create_stock/', views.create_stock, name='create_stock'),
+    path('update_stock/', views.update_stock, name='update_stock'),
+    path('create-product/', views.create_product, name='create_product'),
+
+    #หน้ารายการ
+    path('product/<int:id>/', views.product_detail_view, name='product_detail_view'),
+    path('product/edit/<int:id>/', views.edit_product, name='edit_product'),
 ]

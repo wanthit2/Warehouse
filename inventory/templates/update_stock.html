@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>อัปเดตสต็อกสินค้า</title>
+</head>
+<body>
+    <h1>อัปเดตสต็อกสินค้า</h1>
+
+    <form method="POST">
+        {% csrf_token %}
+        <label for="product_id">เลือกสินค้า:</label>
+        <select name="product_id">
+            {% for product in products %}
+                <option value="{{ product.id }}">{{ product.name }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="quantity">จำนวนที่อัปเดต:</label>
+        <input type="number" name="quantity" required>
+
+        <button type="submit">อัปเดต</button>
+    </form>
+</body>
+</html>

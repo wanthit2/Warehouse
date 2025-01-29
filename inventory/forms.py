@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from .models import Product
 from .models import Profile
 from .models import UserProfile
-
+from .models import Stock
 
 STATUS_CHOICES = [
     ('pending', 'รอจัดส่ง'),
@@ -99,3 +99,13 @@ class UserProfileForm(forms.ModelForm):
     class Meta:
         model = UserProfile
         fields = ['phone_number', 'profile_picture']
+
+
+class StockForm(forms.ModelForm):
+    class Meta:
+        model = Stock
+        fields = ['store', 'product_name', 'quantity', 'price', 'description']
+
+
+class SearchStockForm(forms.Form):
+    query = forms.CharField(label='ค้นหาสินค้า', max_length=100, required=False)

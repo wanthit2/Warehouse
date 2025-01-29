@@ -9,15 +9,17 @@
   <link rel="stylesheet" href="{% static 'product1.css' %}">
 </head>
 <body>
-  <div class="container">
+<div class="container">
         <!-- Sidebar -->
         <aside class="sidebar">
-    <a href="{% url 'my_view' %}" class="item-card"><i class="bi bi-bar-chart-line"></i> รายการ</a>
-    <a href="{% url 'order_view' %}" class="item-card"><i class="bi bi-clipboard-data"></i> คำสั่งซื้อ</a>
-    <a href="{% url 'graph_view' %}" class="item-card"><i class="bi bi-pie-chart"></i> กราฟ</a>
-    <a href="{% url 'products' %}" class="item-card"><i class="bi bi-box-seam"></i> สินค้า</a>
-          <a href="{% url 'home1' %}" class="home-icon"><i class="bi bi-house"></i></a>
-</aside>
+
+            <a href="{% url 'my_view' %}" class="item-card"><i class="bi bi-bar-chart-line"></i> รายการ</a>
+            <a href="{% url 'order_view' %}" class="item-card"><i class="bi bi-clipboard-data"></i> คำสั่งซื้อ</a>
+            <a href="{% url 'graph_view' %}" class="item-card"><i class="bi bi-pie-chart"></i> กราฟ</a>
+            <a href="{% url 'products' %}" class="item-card"><i class="bi bi-box-seam"></i> สินค้า</a>
+            <a href="{% url 'stock_view' %}" class="item-card"><i class="bi bi-box-seam"></i> สต๊อก</a>
+            <a href="{% url 'home1' %}" class="home-icon"><i class="bi bi-house"></i></a>
+        </aside>
     <main class="main-content">
       <header>
         <h1>สินค้า</h1>

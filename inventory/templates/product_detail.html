@@ -4,14 +4,108 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>รายละเอียดสินค้า</title>
+  <style>
+    /* เพิ่มการจัดระเบียบข้อมูล */
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      background-color: #fff;
+      padding: 20px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 1.5em;
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .card-text {
+      font-size: 1.1em;
+      margin-bottom: 8px;
+    }
+
+    .card-text strong {
+      color: #333;
+    }
+
+    img {
+      width: 50%;  /* กำหนดความกว้างของรูป */
+      height: auto; /* ให้ความสูงปรับตามสัดส่วน */
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto; /* จัดกลางรูปภาพ */
+    }
+
+    .btn {
+      padding: 10px 15px;
+      color: #fff;
+      background-color: #007bff;
+      border: none;
+      border-radius: 5px;
+      text-decoration: none;
+      font-size: 1em;
+    }
+
+    .btn:hover {
+      background-color: #0056b3;
+    }
+
+    .btn-secondary {
+      background-color: #6c757d;
+    }
+
+    .btn-secondary:hover {
+      background-color: #5a6268;
+    }
+  </style>
 </head>
 <body>
-  <h1>{{ product.product_name }}</h1>
-  <p>รหัสสินค้า: {{ product.product_code }}</p>
-  <p>ราคา: {{ product.price }}</p>
-  <p>จำนวนในสต็อก: {{ product.quantity }}</p>
-  <p>รายละเอียด: {{ product.description }}</p>
-  <img src="{{ product.image.url }}" alt="{{ product.product_name }}">
-  <a href="{% url 'products' %}">กลับไปยังรายการสินค้า</a>
+  <div class="container">
+    <h1>{{ product.product_name }}</h1>
+
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">ข้อมูลสินค้า</h5>
+        <p class="card-text"><strong>รหัสสินค้า:</strong> {{ product.product_code }}</p>
+        <p class="card-text"><strong>ราคา:</strong> {{ product.price | floatformat:2 }} บาท</p>
+        <p class="card-text"><strong>จำนวนในสต็อก:</strong> {{ product.quantity }}</p>
+        <p class="card-text"><strong>รายละเอียด:</strong> {{ product.description }}</p>
+      </div>
+    </div>
+
+    <div>
+      <img src="{{ product.image.url }}" alt="{{ product.product_name }}">
+    </div>
+
+    <div>
+      <a href="{% url 'my_view' %}" class="btn btn-secondary">กลับไปยังรายการ</a>
+    </div>
+  </div>
 </body>
 </html>
+
+

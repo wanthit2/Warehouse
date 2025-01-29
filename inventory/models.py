@@ -19,10 +19,32 @@ class Member(models.Model):
     def __str__(self):
         return self.user.username
 
+class Store(models.Model):
+    store_name = models.CharField(max_length=100, verbose_name='ชื่อร้าน')
+    address = models.TextField(verbose_name='ที่อยู่')
+    created_at = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return self.store_name
+# Model สำหรับสต็อกสินค้า
+class Stock(models.Model):
+    product_name = models.CharField(max_length=100, verbose_name='ชื่อสินค้า')
+    quantity = models.PositiveIntegerField(verbose_name='จำนวน')
+    price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='ราคา')
+    added_date = models.DateField(auto_now_add=True, verbose_name='วันที่เพิ่มสินค้า')
+    store = models.CharField(max_length=100, verbose_name='ร้านค้า', blank=True, null=True)
+    description = models.TextField(verbose_name='รายละเอียดสินค้า', blank=True, null=True)
+
+    class Meta:
+        verbose_name = 'สินค้าในคลัง'
+        verbose_name_plural = 'สินค้าในคลังทั้งหมด'
+
+    def __str__(self):
+        return self.product_name
 
 
 class Product(models.Model):
+    #store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='products', verbose_name='ร้าน', default=1)
     product_name = models.CharField(max_length=255, default='Default Product Name', verbose_name='ชื่อสินค้า')
     product_code = models.CharField(max_length=100, unique=True, default='DEFAULT_CODE', verbose_name='รหัสสินค้า')
     description = models.TextField(blank=True, null=True, verbose_name='รายละเอียดสินค้า')
@@ -106,3 +128,4 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.user.username
+
