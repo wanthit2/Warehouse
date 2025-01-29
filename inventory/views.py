@@ -15,6 +15,9 @@ from .models import UserProfile
 from .models import Store, Stock
 from .forms import StockForm
 from .forms import SearchStockForm
+from django.contrib.auth.decorators import login_required, user_passes_test
+
+
 
 
 def home1(request):
@@ -557,3 +560,15 @@ def update_stock(request):
 def create_product(request):
     # โค้ดสำหรับการสร้างสินค้า
     return render(request, 'create_product.html')
+
+
+# ฟังก์ชันตรวจสอบว่าเป็น Superuser หรือไม่
+def is_admin(user):
+    return user.is_superuser
+
+# View สำหรับ Stock ที่เฉพาะ Admin เห็นได้
+@login_required
+@user_passes_test(is_admin)  # อนุญาตเฉพาะ Admin
+def stock_list(request):
+    stocks = Stock.objects.all()
+    return render(request, 'inventory/stock.html', {'stocks': stocks})

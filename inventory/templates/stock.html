@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>สต็อกสินค้า</title>
+
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
     {% load static %}
     <link rel="stylesheet" href="{% static 'styles2.css' %}">
 </head>
@@ -18,70 +21,68 @@
             <a href="{% url 'products' %}" class="item-card"><i class="bi bi-box-seam"></i> สินค้า</a>
             <a href="{% url 'stock_view' %}" class="item-card"><i class="bi bi-box-seam"></i> สต๊อก</a>
             <a href="{% url 'home1' %}" class="home-icon"><i class="bi bi-house"></i></a>
-
         </aside>
 
         <!-- Main Content -->
         <main class="content">
-            <h1 class="mb-4">สต็อกสินค้า</h1>
+            {% if user.is_authenticated %}
+                {% if user.is_superuser or user.store %}
+                    <h1 class="mb-4">สต็อกสินค้า</h1>
 
-            <!-- Search Bar -->
-            <div class="search-bar mb-4">
-                <form method="get" class="d-flex">
-                    {{ form.as_p }}  <!-- แสดงฟอร์ม -->
-                    <button type="submit" class="btn btn-primary ms-2">ค้นหา</button>
-                </form>
-            </div>
+                    <!-- Search Bar -->
+                    <div class="search-bar mb-4">
+                        <form method="get" class="d-flex">
+                            {{ form.as_p }}
+                            <button type="submit" class="btn btn-primary ms-2">ค้นหา</button>
+                        </form>
+                    </div>
 
-            <!-- เพิ่มสต็อก -->
-            <div class="mb-4 text-end">
-                <a href="{% url 'create_stock' %}" class="btn btn-success">เพิ่มสต็อกสินค้าใหม่</a>
-            </div>
+                    <!-- เพิ่มสต็อก -->
+                    <div class="mb-4 text-end">
+                        <a href="{% url 'create_stock' %}" class="btn btn-success">เพิ่มสต็อกสินค้าใหม่</a>
+                    </div>
 
-            <!-- Action Buttons -->
-            <div class="action-buttons">
-                <button class="btn btn-secondary">สถานะสินค้า</button>
-                <button class="btn btn-secondary">กรองตามหมวดหมู่</button>
-            </div>
-
-            <!-- Stock Table -->
-            <table class="table table-bordered table-striped">
-                <thead class="table-dark">
-                    <tr>
-                        <th>รหัสสินค้า</th>
-                        <th>ชื่อสินค้า</th>
-                        <th>จำนวนคงเหลือ</th>
-                        <th>ราคา</th>
-                        <th>วันที่เพิ่มสินค้า</th>
-                        <th>ร้านค้า</th>
-                        <th>รายละเอียดสินค้า</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if stock %}
-                        {% for item in stock %}
+                    <!-- Stock Table -->
+                    <table class="table table-bordered table-striped">
+                        <thead class="table-dark">
                             <tr>
-                                <td>{{ item.id }}</td>
-                                <td>{{ item.product_name }}</td>
-                                <td>{{ item.quantity }}</td>
-                                <td>{{ item.price }}</td>
-                                <td>{{ item.added_date }}</td>
-                                <td>{{ item.store }}</td>
-                                <td>{{ item.description }}</td>
+                                <th>รหัสสินค้า</th>
+                                <th>ชื่อสินค้า</th>
+                                <th>จำนวนคงเหลือ</th>
+                                <th>ราคา</th>
+                                <th>วันที่เพิ่มสินค้า</th>
+                                <th>ร้านค้า</th>
+                                <th>รายละเอียดสินค้า</th>
                             </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="7" style="text-align: center;">ยังไม่มีข้อมูล</td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
+                        </thead>
+                        <tbody>
+                            {% if stock %}
+                                {% for item in stock %}
+                                    <tr>
+                                        <td>{{ item.id }}</td>
+                                        <td>{{ item.product_name }}</td>
+                                        <td>{{ item.quantity }}</td>
+                                        <td>{{ item.price }}</td>
+                                        <td>{{ item.added_date }}</td>
+                                        <td>{{ item.store.name }}</td>
+                                        <td>{{ item.description }}</td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center">ยังไม่มีข้อมูล</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <h2 class="text-danger">คุณไม่มีสิทธิ์เข้าถึงหน้านี้</h2>
+                {% endif %}
+            {% endif %}
         </main>
     </div>
 
-
-    <!-- เพิ่ม Script สำหรับ Bootstrap -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-pzjw8f+ua7Kw1TIq0TY28p2I5VmdLGlNlcSRvexFiBsUq5O9yGcl6O1uF78jIKH6" crossorigin="anonymous"></script>
+    <!-- Bootstrap Script -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
