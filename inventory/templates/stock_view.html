@@ -56,15 +56,15 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% if stock %}
-                                {% for item in stock %}
+                            {% if products %}
+                                {% for item in products %}
                                     <tr>
                                         <td>{{ item.id }}</td>
                                         <td>{{ item.product_name }}</td>
                                         <td>{{ item.quantity }}</td>
                                         <td>{{ item.price }}</td>
                                         <td>{{ item.added_date }}</td>
-                                       <td>{{ item.store.name }}</td>
+                                        <td>{{ item.store.name }}</td>
                                         <td>{{ item.description }}</td>
                                     </tr>
                                 {% endfor %}

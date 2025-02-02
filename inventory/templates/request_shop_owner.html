@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>ขอเป็นเจ้าของร้าน</title>
+</head>
+<body>
+    <h1>กรุณากรอกข้อมูลเพื่อขอเป็นเจ้าของร้าน</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}  <!-- แสดงฟอร์ม -->
+        <button type="submit" class="btn btn-primary">ส่งคำขอ</button>
+    </form>
+</body>
+</html>

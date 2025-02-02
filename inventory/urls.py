@@ -3,6 +3,9 @@ from . import views
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import user_passes_test
 
+from .views import AddShopView
+
+
 # ฟังก์ชันเช็คว่าเป็นแอดมินหรือไม่
 def admin_required(function):
     return user_passes_test(lambda u: u.is_staff)(function)
@@ -45,24 +48,58 @@ urlpatterns = [
     path('admin/orders/add/', views.add_order, name='add_order'),
     path('admin/orders/delete/<int:order_id>/', views.delete_order, name='delete_order'),
 
+
+    path('request_shop_owner/', views.request_shop_owner, name='request_shop_owner'),
+    path('success/', views.success_page, name='success_page'),
+
     #adminstock
-    path('admin/stores/', views.store_list, name='store_list'),  # แสดงร้านค้าทั้งหมด
-    path('admin/stores/<int:store_id>/stock/', views.store_stock, name='store_stock'),  # แสดงสต็อกของร้าน
-    path('admin/stores/<int:store_id>/stock/add/', views.add_stock, name='add_stock'),  # เพิ่มสินค้าในสต็อก
-    path('admin/stores/stock/edit/<int:stock_id>/', views.edit_stock, name='edit_stock'),  # แก้ไขสต็อก
-    path('admin/stores/stock/delete/<int:stock_id>/', views.delete_stock, name='delete_stock'),  # ลบสินค้าในสต็อก
-    path('store/<int:store_id>/', views.store_detail, name='store_detail'),
+    path('admin_home/', views.admin_home_view, name='admin_home'),
+    path('manage_users/', views.manage_users, name='manage_users'),
+    path('approve_user/<int:user_id>/', views.approve_user, name='approve_user'),
+    path('reject_user/<int:user_id>/', views.reject_user, name='reject_user'),
+    path('request_status/<int:user_id>/', views.request_status, name='request_status'),
+    path('manage_shops/', views.manage_shops, name='manage_shops'),
+    path('shop_detail/<int:shop_id>/', views.shop_detail, name='shop_detail'),
+    #path('approve-shop-request/<int:request_id>/', views.approve_shop_request, name='approve_shop_request'),
+    #path('reject-shop-request/<int:request_id>/', views.reject_shop_request, name='reject_shop_request'),
+    path('request_status/<int:user_id>/', views.request_status, name='request_status'),
+
     #URL ของร้าน
     path('stores/', views.store_list, name='store_list'),
     path('store/<int:store_id>/', views.store_detail, name='store_detail'),
+    path('add_admin/', views.add_admin, name='add_admin'),
+    path('shop/<int:shop_id>/products/', views.product_list, name='product_list'),
+    path('shop/<int:shop_id>/add_product/', views.add_product, name='add_product'),
+    path('add-shop/', AddShopView.as_view(), name='add_shop'),
+    path('edit-shop/<int:shop_id>/', views.edit_shop, name='edit_shop'),
+    path('delete-shop/<int:shop_id>/', views.delete_shop, name='delete_shop'),
+    path('shop-list/', views.shop_list, name='shop_list'),
+    path('create/', views.create_shop, name='create_shop'),
+    path('admin-shop/', views.admin_home_shop, name='admin_homeshop'),
+
+
 
     #stock
-    path('stock_view/', views.stock_view, name='stock_view'),
     path('create_stock/', views.create_stock, name='create_stock'),
     path('update_stock/', views.update_stock, name='update_stock'),
     path('create-product/', views.create_product, name='create_product'),
 
     #หน้ารายการ
     path('product/<int:id>/', views.product_detail_view, name='product_detail_view'),
-    path('product/edit/<int:id>/', views.edit_product, name='edit_product'),
+    path('product/edit/<int:pk>/', views.edit_product, name='edit_product'),
+
+    path('shop-owner-request/', views.shop_owner_request, name='shop-owner-request'),  # สำหรับหน้าขอเป็นเจ้าของร้าน
+    path('shop-owner-request-success/', views.shop_owner_request_success, name='shop-owner-request-success'),
+
+    path('stock/', views.stock_view, name='stock_view'),
+    path('add-stock/', views.stock_add, name='stock_add'),  # เพิ่มสต็อก
+    path('edit/<int:id>/', views.stock_edit, name='stock_edit'),
+    path('delete/<int:id>/', views.stock_delete, name='stock_delete'),
+
+    #จัดการadmin
+    path('manage_admins/<int:shop_id>/', views.manage_shop_admins, name='manage_admins'),
+    path('shop/<int:shop_id>/manage_admins/', views.manage_shop_admins, name='manage_shop_admins'),
+    path('manage-products/<int:shop_id>/', views.manage_products, name='manage_products'),
+
+
 ]

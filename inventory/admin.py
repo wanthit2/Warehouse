@@ -1,38 +1,34 @@
-from django.contrib.auth.models import User
-from django.contrib.auth.admin import UserAdmin
 from django.contrib import admin
-from .models import Order, Product, Store, Stock
+from django.contrib.auth import get_user_model
+from .models import Order, Product, Store, Stock, Shop
+from .models import CustomUser
+# ใช้ get_user_model() ถ้าคุณใช้ CustomUser
+User = get_user_model()
+
 # การแสดงผลของ Order ใน Admin
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('order_id', 'product_name', 'price', 'quantity', 'status', 'user', 'store', 'total_price')  # เพิ่มฟิลด์ store
-    list_filter = ('status', 'store')  # กรองตามสถานะและร้าน
-    search_fields = ('product_name', 'order_id', 'user__username')  # ค้นหาตามชื่อสินค้า, รหัสคำสั่งซื้อ, และผู้ใช้
+    list_display = ('order_id', 'product_name', 'price', 'quantity', 'status', 'user', 'store', 'total_price')
+    list_filter = ('status', 'store')
+    search_fields = ('product_name', 'order_id', 'user__username')
 
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
         if request.user.is_superuser:
-            return queryset  # ถ้าเป็น superuser ให้เห็นทุกร้าน
-        return queryset.filter(store__owner=request.user.username)  # กรองร้านตามเจ้าของร้านที่ล็อกอินอยู่
+            return queryset
+        return queryset.filter(store__owner=request.user)
 
     def total_price(self, obj):
-        return obj.total_price  # เรียกใช้ @property เพื่อคำนวณราคารวม
-    total_price.admin_order_field = 'total_price'  # การสั่งเรียงตาม total_price
+        return obj.total_price
+    total_price.admin_order_field = 'total_price'
 
-# ลงทะเบียนแอดมิน
 admin.site.register(Order, OrderAdmin)
 
+# ลงทะเบียน CustomUser ใน Admin
+@admin.register(CustomUser)
+class CustomUserAdmin(admin.ModelAdmin):
+    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'is_superuser')
 
-# ปรับแต่งการแสดงผลของ User ใน Admin
-class CustomUserAdmin(UserAdmin):
-    list_display = ('username', 'email', 'first_name', 'last_name', 'date_joined', 'last_login')  # เพิ่มฟิลด์ที่ต้องการ
-    search_fields = ('username', 'email')  # ค้นหาผู้ใช้ตามชื่อผู้ใช้และอีเมล
-    ordering = ('username',)  # จัดเรียงตามชื่อผู้ใช้
-
-# ยกเลิกการลงทะเบียน User แบบเดิมแล้วลงทะเบียน User ใหม่
-admin.site.unregister(User)
-admin.site.register(User, CustomUserAdmin)
-
-# ลงทะเบียน Product Admin
+# ลงทะเบียน Store, Product, Stock ใน Admin
 class StoreAdmin(admin.ModelAdmin):
     list_display = ('name', 'owner', 'description')
 
@@ -40,7 +36,7 @@ class StoreAdmin(admin.ModelAdmin):
         queryset = super().get_queryset(request)
         if request.user.is_superuser:
             return queryset
-        return queryset.filter(owner=request.user)  # กรองร้านของผู้ใช้งานที่ล็อกอิน
+        return queryset.filter(owner=request.user)
 
 class StockAdmin(admin.ModelAdmin):
     list_display = ('product_name', 'quantity', 'price', 'store')
@@ -49,7 +45,7 @@ class StockAdmin(admin.ModelAdmin):
         queryset = super().get_queryset(request)
         if request.user.is_superuser:
             return queryset
-        return queryset.filter(store__owner=request.user)  # กรองตามเจ้าของร้าน
+        return queryset.filter(store__owner=request.user)
 
 class ProductAdmin(admin.ModelAdmin):
     list_display = ('product_name', 'product_code', 'price', 'quantity', 'store')
@@ -58,9 +54,15 @@ class ProductAdmin(admin.ModelAdmin):
         queryset = super().get_queryset(request)
         if request.user.is_superuser:
             return queryset
-        return queryset.filter(store__owner=request.user)  # กรองตามเจ้าของร้าน
+        return queryset.filter(store__owner=request.user)
+
+
+class ShopAdmin(admin.ModelAdmin):
+    list_display = ('name', 'owner', 'location', 'created_at')  # ใช้ 'owner' แทน 'user'
+
 
 admin.site.register(Store, StoreAdmin)
 admin.site.register(Stock, StockAdmin)
 admin.site.register(Product, ProductAdmin)
+admin.site.register(Shop)
 

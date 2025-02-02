@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>สร้างร้านค้า</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" href="#">📌 ระบบจัดการร้านค้า</a>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <h1 class="mb-4">🛍 สร้างร้านค้าใหม่</h1>
+
+    <!-- Success Message -->
+    {% if message %}
+        <div class="alert alert-success">{{ message }}</div>
+    {% endif %}
+
+    <!-- Form for Creating Shop -->
+    <form method="POST">
+    {% csrf_token %}
+    {{ form.as_p }}  <!-- ฟอร์มจะถูกแสดงในลักษณะ <p> -->
+
+    <!-- แสดงข้อผิดพลาด -->
+    {% if form.errors %}
+        <div class="alert alert-danger mt-3">
+            <ul>
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    <button type="submit" class="btn btn-primary">บันทึก</button>
+</form>
+
+
+    <!-- Back Button -->
+    <a href="{% url 'manage_shops' %}" class="btn btn-secondary mt-3">ย้อนกลับ</a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

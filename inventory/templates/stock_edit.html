@@ -1,0 +1,12 @@
+{% extends 'base_generic.html' %}
+
+{% block content %}
+<h1>แก้ไขสินค้า: {{ product.product_name }}</h1>
+
+<form method="POST">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">บันทึกการแก้ไข</button>
+</form>
+
+{% endblock %}

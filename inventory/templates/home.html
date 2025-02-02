@@ -147,51 +147,64 @@
     </style>
 </head>
 <body>
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <a href="{% url 'my_view' %}" class="item-card"><i class="bi bi-bar-chart-line"></i> รายการ</a>
-            <a href="{% url 'order_view' %}" class="item-card"><i class="bi bi-clipboard-data"></i> คำสั่งซื้อ</a>
-            <a href="{% url 'graph_view' %}" class="item-card"><i class="bi bi-pie-chart"></i> กราฟ</a>
-            <a href="{% url 'products' %}" class="item-card"><i class="bi bi-box-seam"></i> สินค้า</a>
-            <a href="{% url 'stock_view' %}" class="item-card"><i class="bi bi-box-seam"></i> สต๊อก</a>
-            <a href="{% url 'home1' %}" class="home-icon"><i class="bi bi-house"></i></a>
-    </div>
+<!-- Sidebar -->
+<div class="sidebar">
+    <a href="{% url 'my_view' %}" class="item-card"><i class="bi bi-bar-chart-line"></i> รายการ</a>
+    <a href="{% url 'order_view' %}" class="item-card"><i class="bi bi-clipboard-data"></i> คำสั่งซื้อ</a>
+    <a href="{% url 'graph_view' %}" class="item-card"><i class="bi bi-pie-chart"></i> กราฟ</a>
+    <a href="{% url 'products' %}" class="item-card"><i class="bi bi-box-seam"></i> สินค้า</a>
+    <a href="{% url 'stock_view' %}" class="item-card"><i class="bi bi-box-seam"></i> สต๊อก</a>
+    <a href="{% url 'home1' %}" class="home-icon"><i class="bi bi-house"></i></a>
 
-    <!-- Main Content -->
-    <div class="main-content">
-        <!-- Header -->
-        <div class="header">
-            <div class="search-bar">
-                <input type="text" placeholder="Search...">
-            </div>
-            <div class="icon-bar">
-                <span>🔔</span>
-                <a href="{% url 'profile' %}" style="text-decoration: none; color: inherit;">👤</a>
-                <form action="{% url 'logout' %}" method="POST" style="display: inline;">
-                 {% csrf_token %}
-                  <button type="submit" style="background: none; border: none; color: inherit; cursor: pointer;">
-                  🚪 ออกจากระบบ
-                  </button>
-                </form>
+   <!-- ปุ่ม "ขอเป็นเจ้าของร้าน" (แสดงให้ผู้ใช้ทั่วไป) -->
+    <a href="{% url 'request_status' user.id %}" class="item-card">
+        <i class="bi bi-person-bounding-box"></i> ขอเป็นเจ้าของร้าน
+    </a>
 
-            </div>
+    <!-- ปุ่ม "ไปยังหน้าแอดมิน" (แสดงเฉพาะคนที่ได้รับอนุมัติแล้ว) -->
+    {% if user.is_shop_owner_approved or user.is_admin %}
+    <a href="{% url 'admin_home' %}" class="item-card">
+        <i class="bi bi-shield-lock"></i> ไปยังหน้าแอดมิน
+    </a>
+    {% endif %}
+</div>
+
+
+<!-- Main Content -->
+<div class="main-content">
+    <!-- Header -->
+    <div class="header">
+        <div class="search-bar">
+            <input type="text" placeholder="Search...">
         </div>
+        <div class="icon-bar">
+            <span>🔔</span>
+            <a href="{% url 'profile' %}" style="text-decoration: none; color: inherit;">👤</a>
+            <form action="{% url 'logout' %}" method="POST" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" style="background: none; border: none; color: inherit; cursor: pointer;">
+                    🚪 ออกจากระบบ
+                </button>
+            </form>
 
-        <!-- Grid Content -->
-        <div class="grid-container">
-            <div class="grid-item">
-                <img src="edit-icon.png" alt="Edit Icon">
-            </div>
-            <div class="grid-item">
-                <img src="edit-icon.png" alt="Edit Icon">
-            </div>
-            <div class="grid-item">
-                <img src="edit-icon.png" alt="Edit Icon">
-            </div>
-            <div class="grid-item">
-                <img src="edit-icon.png" alt="Edit Icon">
-            </div>
         </div>
     </div>
+
+    <!-- Grid Content -->
+    <div class="grid-container">
+        <div class="grid-item">
+            <img src="edit-icon.png" alt="Edit Icon">
+        </div>
+        <div class="grid-item">
+            <img src="edit-icon.png" alt="Edit Icon">
+        </div>
+        <div class="grid-item">
+            <img src="edit-icon.png" alt="Edit Icon">
+        </div>
+        <div class="grid-item">
+            <img src="edit-icon.png" alt="Edit Icon">
+        </div>
+    </div>
+</div>
 </body>
 </html>

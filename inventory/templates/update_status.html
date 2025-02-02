@@ -21,6 +21,7 @@
         <!-- Main Content -->
         <main class="content">
             <h1>อัปเดตสถานะคำสั่งซื้อ</h1>
+            <h2>ร้าน: {{ shop_name }}</h2> <!-- แสดงชื่อร้านที่เกี่ยวข้อง -->
 
             <form method="POST" action="{% url 'update_status' order.order_id %}">
                 {% csrf_token %}

@@ -1,4 +1,7 @@
-from .forms import OrderForm, UserProfileForm
+from django.urls import reverse_lazy
+from django.views.generic import CreateView
+
+from .forms import OrderForm, UserProfileForm, CustomUserCreationForm
 from .models import *
 from django.contrib import messages
 from django.contrib.auth.models import User
@@ -16,8 +19,11 @@ from .models import Store, Stock
 from .forms import StockForm
 from .forms import SearchStockForm
 from django.contrib.auth.decorators import login_required, user_passes_test
-
-
+from inventory.models import CustomUser
+from .forms import ShopOwnerRequestForm
+from .forms import CustomUserProfileForm
+from django.http import HttpResponseForbidden, HttpResponseNotFound, JsonResponse, HttpResponse
+from inventory.models import Shop
 
 
 def home1(request):
@@ -51,9 +57,10 @@ def my_view(request):
 
     # ถ้ามีการค้นหา
     if query:
-        products = products.filter(name__icontains=query)  # กรองชื่อสินค้าตามที่ค้นหา
+        products = products.filter(product_name__icontains=query)  # กรองชื่อสินค้าตามที่ค้นหา
 
     return render(request, 'list.html', {'products': products, 'query': query})
+
 
 @login_required
 def order_view(request):
@@ -69,10 +76,18 @@ def product_detail_view(request, id):
     product = get_object_or_404(Product, id=id)
     return render(request, 'product_detail.html', {'product': product})
 
-def edit_product(request, id):
-    product = get_object_or_404(Product, id=id)
-    # Logic for editing the product
-    return render(request, 'edit_product.html', {'product': product})
+def edit_product(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+
+    if request.method == 'POST':
+        form = ProductForm(request.POST, instance=product)
+        if form.is_valid():
+            form.save()
+            return redirect('product_detail_view', pk=product.pk)  # ไปที่หน้ารายละเอียดของสินค้า
+    else:
+        form = ProductForm(instance=product)
+
+    return render(request, 'edit_product.html', {'form': form, 'product': product})
 
 
 def create_order(request):
@@ -94,59 +109,84 @@ def delete_order(request, order_id):
     return redirect('my_view')  # กลับไปยังหน้ารายการคำสั่งซื้อ
 
 
+
 def login_view(request):
     if request.method == 'POST':
-        username = request.POST.get('username', '')  # คืนค่าว่างหากไม่มี key
-        password = request.POST.get('password', '')
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '').strip()
+
+        # ตรวจสอบข้อมูลผู้ใช้
         user = authenticate(request, username=username, password=password)
+
         if user is not None:
-            auth_login(request, user)  # ใช้ฟังก์ชัน login ที่มาจาก django.contrib.auth
+            auth_login(request, user)  # ล็อกอินเข้า session
             messages.success(request, 'เข้าสู่ระบบสำเร็จ')
-            # ตรวจสอบว่า user เป็นแอดมินหรือไม่
-            if user.is_staff:
-                return redirect('home1')  # URL ของหน้าแอดมิน
+
+            # ถ้าเป็น superuser (superadmin) ให้ไปที่ /admin/
+            if user.is_superuser:
+                return redirect('/admin_home/')
             else:
-                return redirect('home1')  # URL ของหน้าผู้ใช้ทั่วไป
+                return redirect('home1')  # ผู้ใช้ทั่วไปไปที่ home1
+
         else:
             messages.error(request, 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง')
-    return render(request, 'login.html')
 
+    return render(request, 'login.html')
 
 def custom_login(request):
     if request.method == 'POST':
         username = request.POST['username']
         password = request.POST['password']
 
-        # ตรวจสอบข้อมูลผู้ใช้
+        # ตรวจสอบข้อมูลผู้ใช้ (ยืนยันตัวตน)
         user = authenticate(request, username=username, password=password)
 
         if user is not None:
             login(request, user)
-            # ตรวจสอบสิทธิ์ผู้ใช้ (ถ้าเป็น admin จะไปหน้า /admin/)
-            if user.is_staff:
+
+            # ตรวจสอบสิทธิ์ผู้ใช้
+            if user.is_superuser:  # ถ้าเป็น superadmin ไปที่ /admin/
                 return redirect('/admin/')
+            elif user.is_staff:  # ถ้าเป็น staff ธรรมดา ไปที่หน้า admin
+                return redirect('/staff-dashboard/')
             else:
-                # ผู้ใช้ปกติจะไปหน้า /home1/
-                return redirect('/home1/')
+                return redirect('/home1/')  # ผู้ใช้ทั่วไปไปหน้า home1
+
         else:
-            # หากไม่พบผู้ใช้ให้แจ้งข้อผิดพลาด
             messages.error(request, "Username หรือ Password ไม่ถูกต้อง")
             return redirect('login')  # กลับไปที่หน้า login
+
     return render(request, 'login.html')
 
 def sales_view(request):
     # ดึงข้อมูลที่เกี่ยวข้องกับฝ่ายขาย
     return render(request, 'sales_view.html')
 
+
+@login_required
 def status_view(request):
-    # ดึงข้อมูลที่เกี่ยวข้องกับสถานะ
-    return render(request, 'status_view.html')
+    # ดึงข้อมูลผู้ใช้ที่ล็อกอินอยู่
+    user = request.user
+
+    # ดึงข้อมูลร้านของผู้ใช้ ถ้ามีร้าน
+    shop = None
+    try:
+        shop = Shop.objects.get(owner=user)  # ถ้าผู้ใช้มีร้าน
+    except Shop.DoesNotExist:
+        shop = None  # ถ้าไม่มีร้าน
+
+    return render(request, 'status_view.html', {'user': user, 'shop': shop})
 
 
 
+@login_required
 def update_status(request, order_id):
     # ดึงคำสั่งซื้อที่ต้องการอัปเดต
     order = get_object_or_404(Order, order_id=order_id)
+
+    # ตรวจสอบสิทธิ์ของผู้ใช้
+    if order.shop.owner != request.user:
+        return HttpResponseForbidden("คุณไม่มีสิทธิ์ในการอัปเดตสถานะคำสั่งซื้อนี้")
 
     if request.method == 'POST':
         # รับสถานะใหม่จากฟอร์ม
@@ -157,30 +197,54 @@ def update_status(request, order_id):
             order.status = new_status
             order.save()
 
+            # แสดงข้อความแจ้งเตือน
+            messages.success(request, f'สถานะของคำสั่งซื้อ {order.order_id} ได้รับการอัปเดตแล้ว!')
+
         # เปลี่ยนเส้นทางไปยังหน้ารายการคำสั่งซื้อ
         return redirect('order_view')
 
-    return render(request, 'update_status.html', {'order': order})
+    # ส่งข้อมูลคำสั่งซื้อและชื่อร้านไปยังเทมเพลต
+    return render(request, 'update_status.html', {
+        'order': order,
+        'shop_name': order.shop.name,  # แสดงชื่อร้านที่เชื่อมโยงกับคำสั่งซื้อ
+    })
+
+
+def shop_owner_status(request):
+    user = request.user  # รับข้อมูลผู้ใช้ที่ล็อกอิน
+
+    try:
+        # ดึงข้อมูลร้านค้าที่เชื่อมโยงกับผู้ใช้
+        shop = Shop.objects.get(owner=user)
+    except Shop.DoesNotExist:
+        shop = None  # ถ้าผู้ใช้ไม่มีร้านก็ให้ shop เป็น None
+
+    return render(request, 'status_request.html', {
+        'user': user,
+        'shop': shop,  # ส่งข้อมูลร้านไปยังเทมเพลต
+    })
+
 
 def register(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            form.save()  # บันทึกผู้ใช้ใหม่
-            messages.success(request, 'การลงทะเบียนสำเร็จ! กรุณาเข้าสู่ระบบ.')
-            return redirect('login')
+            user = form.save(commit=False)
+            username = form.cleaned_data['username']
+            if not username:  # ตรวจสอบว่า username ไม่เป็นค่าว่าง
+                form.add_error('username', 'Username cannot be empty')
+            else:
+                user.set_password(form.cleaned_data['password1'])
+                user.save()
+                messages.success(request, 'การลงทะเบียนสำเร็จ! กรุณาเข้าสู่ระบบ.')
+                return redirect('login')
         else:
             messages.error(request, 'กรุณากรอกข้อมูลให้ครบถ้วน')
     else:
         form = CustomUserCreationForm()
-
     return render(request, 'register.html', {'form': form})
-class CustomUserCreationForm(UserCreationForm):
-    email = forms.EmailField(required=True)
 
-    class Meta:
-        model = User
-        fields = ('username', 'email', 'password1', 'password2')
+
 
 
 @login_required
@@ -474,17 +538,7 @@ def add_stock(request, store_id):
         form = StockForm()
     return render(request, 'add_stock.html', {'form': form, 'store': store})
 
-# แก้ไขสต็อกสินค้า
-def edit_stock(request, stock_id):
-    stock = get_object_or_404(Stock, id=stock_id)
-    if request.method == 'POST':
-        form = StockForm(request.POST, instance=stock)
-        if form.is_valid():
-            form.save()
-            return redirect('store_stock', store_id=stock.store.id)
-    else:
-        form = StockForm(instance=stock)
-    return render(request, 'edit_stock.html', {'form': form, 'stock': stock})
+
 
 # ลบสต็อกสินค้า
 def delete_stock(request, stock_id):
@@ -518,24 +572,21 @@ def store_detail(request, store_id):
 
 
 
-def stock_view(request):
-    form = SearchStockForm(request.GET)
-    stock_items = Stock.objects.all()
 
-    # ตรวจสอบว่ามีการค้นหาหรือไม่
-    if form.is_valid():
-        query = form.cleaned_data['query']
-        if query:
-            stock_items = stock_items.filter(product_name__icontains=query)  # ใช้การค้นหาที่ไม่สนใจตัวพิมพ์
-
-    return render(request, 'stock.html', {
-        'form': form,
-        'stock': stock_items
-    })
-
+@login_required
 def create_stock(request):
-    # คำสั่งหรือการกระทำที่ต้องการทำเมื่อไปยังหน้าสร้างสินค้า
-    return render(request, 'create_stock.html')
+    if request.method == 'POST':
+        form = StockForm(request.POST)
+        if form.is_valid():
+            stock = form.save(commit=False)
+            # เชื่อมโยงสินค้ากับร้านของผู้ใช้ที่เข้าสู่ระบบ
+            stock.store = request.user.stores.first()
+            stock.save()
+            return redirect('stock_view')
+    else:
+        form = StockForm()
+
+    return render(request, 'create_stock.html', {'form': form})
 
 
 def update_stock(request):
@@ -562,13 +613,441 @@ def create_product(request):
     return render(request, 'create_product.html')
 
 
-# ฟังก์ชันตรวจสอบว่าเป็น Superuser หรือไม่
-def is_admin(user):
-    return user.is_superuser
 
-# View สำหรับ Stock ที่เฉพาะ Admin เห็นได้
+
+
+
+
+from django.db.models import Q
 @login_required
-@user_passes_test(is_admin)  # อนุญาตเฉพาะ Admin
-def stock_list(request):
-    stocks = Stock.objects.all()
-    return render(request, 'inventory/stock.html', {'stocks': stocks})
+def admin_home_view(request):
+    # ตรวจสอบว่าเป็น superuser
+    if request.user.is_superuser:
+        # ดึงทุกร้านและแอดมินของร้าน
+        shops = Shop.objects.all()  # ดึงทุกร้าน
+        admins_by_shop = {}
+
+        # สร้าง dictionary ที่เก็บแอดมินของแต่ละร้าน
+        for shop in shops:
+            admins = shop.admins.all()  # ค้นหาแอดมินที่มีสิทธิ์ในร้านนี้
+            admins_by_shop[shop] = admins
+
+        # ส่งข้อมูลร้านและแอดมินให้ template
+        return render(request, 'admin_home.html', {'admins_by_shop': admins_by_shop})
+
+    # debug ตรวจสอบค่าของ user
+    print("User type:", request.user.user_type)
+    print("Is shop owner approved:", request.user.is_shop_owner_approved)
+
+    # ตรวจสอบว่า user เป็นเจ้าของร้านหรือแอดมินร้าน
+    if request.user.is_shop_owner_approved and request.user.user_type in ['shop_owner', 'shop_admin']:
+        try:
+            # ค้นหาร้านที่ผู้ใช้เป็นเจ้าของหรือแอดมิน
+            shop = Shop.objects.filter(owner=request.user).first()
+
+            # ถ้าไม่พบร้าน
+            if not shop:
+                # ตรวจสอบว่า user เป็นแอดมินของร้านใดร้านหนึ่ง
+                shop = Shop.objects.filter(admins=request.user).first()
+
+            # debug ข้อมูลร้านที่ค้นพบ
+            if shop:
+                print("Found shop:", shop.name)
+                return render(request, 'admin_homeshop.html', {'shop': shop})
+            else:
+                return HttpResponseForbidden("คุณไม่มีสิทธิ์เข้าถึงหน้านี้")
+
+        except Shop.DoesNotExist:
+            return HttpResponseForbidden("คุณไม่มีสิทธิ์เข้าถึงหน้านี้")
+
+    # ถ้าไม่ใช่เจ้าของร้านที่ได้รับการอนุมัติหรือแอดมินร้าน
+    return HttpResponseForbidden("คุณไม่มีสิทธิ์เข้าถึงหน้านี้")
+
+
+
+
+
+def manage_users(request):
+    users = CustomUser.objects.filter(is_shop_owner_approved=False)
+    return render(request, 'admin_manage_users.html', {'users': users})
+
+
+
+# ตัวอย่างการอนุมัติผู้ใช้งาน
+def approve_user(request, user_id):
+    user = get_object_or_404(CustomUser, id=user_id)
+
+    # เปลี่ยนประเภทผู้ใช้เป็นเจ้าของร้านและเปลี่ยนสถานะ
+    user.user_type = 'shop_owner'
+    user.is_shop_owner_approved = True
+    user.is_shop_owner = True  # เพิ่มสถานะเป็นเจ้าของร้าน
+    user.save()
+
+    # สร้างร้านใหม่ให้เจ้าของร้าน (ถ้ายังไม่มี)
+    store, created = Store.objects.get_or_create(name=f"ร้านของ {user.username}", owner=user)
+
+    # เชื่อมโยงร้านกับผู้ใช้ (ถ้ามีระบบ ManyToMany)
+    if hasattr(user, 'stores'):
+        user.stores.add(store)
+
+    # แจ้งเตือน
+    messages.success(request, f'ผู้ใช้ {user.username} ได้รับการอนุมัติให้เป็นเจ้าของร้านและร้านถูกสร้างแล้ว!')
+    return redirect('manage_users')
+
+
+@login_required
+def admin_home_shop(request):
+    # ดึงร้านที่เจ้าของเป็นผู้ใช้ที่ล็อกอิน
+    shop = get_object_or_404(Shop, owner=request.user)
+
+    # ส่งข้อมูลร้านไปยังเทมเพลต
+    return render(request, "admin_homeshop.html", {'shop': shop})
+
+
+
+def request_status(request, user_id):
+    # ดึงข้อมูลผู้ใช้จากฐานข้อมูล
+    user = get_object_or_404(CustomUser, id=user_id)
+
+    # ส่งข้อมูลผู้ใช้และสถานะคำขอไปยัง template
+    return render(request, 'request_status.html', {'user': user})
+
+
+
+def reject_user(request, user_id):
+    # ดึงผู้ใช้จากฐานข้อมูล
+    user = get_object_or_404(CustomUser, id=user_id)
+
+    # ปรับสถานะของผู้ใช้ที่ถูกปฏิเสธ
+    user.is_shop_owner_requested = False  # หรือสถานะที่ต้องการให้เป็นเมื่อปฏิเสธ
+    user.save()
+
+    # แสดงข้อความแจ้งเตือน
+    messages.success(request, 'ผู้ใช้ถูกปฏิเสธเรียบร้อยแล้ว')
+
+    return redirect('manage_users')  # หรือไปที่หน้าที่ต้องการ
+
+
+
+def request_shop_owner(request):
+    if request.method == 'POST':
+        form = ShopOwnerRequestForm(request.POST)
+        if form.is_valid():
+            shop_request = form.save(commit=False)  # ไม่บันทึกทันที
+            shop_request.is_approved = False  # ตั้งค่าเริ่มต้นเป็น False
+            shop_request.save()  # บันทึกคำขอ
+            return redirect('shop-owner-request-success')
+    else:
+        form = ShopOwnerRequestForm()
+    return render(request, 'request_shop_owner.html', {'form': form})
+
+def success_page(request):
+    return render(request, 'success.html')
+
+
+def shop_owner_request(request):
+    # logic สำหรับการขอเป็นเจ้าของร้าน
+    if request.method == 'POST':
+        # บันทึกข้อมูลหรือทำการอนุมัติ
+        return redirect('shop-owner-request-success')  # ใช้ URL นี้หลังจาก POST เสร็จ
+    return render(request, 'shop_owner_request.html')
+
+
+def shop_owner_request_success(request):
+    return render(request, 'shop_owner_request_success.html')
+
+
+from .forms import AddAdminForm
+def add_admin(request):
+    if request.method == 'POST':
+        form = AddAdminForm(request.POST)
+        if form.is_valid():
+            user = form.cleaned_data['user']
+            # เพิ่มสิทธิ์เป็นแอดมิน
+            user.is_staff = True
+            user.save()
+            messages.success(request, f"ผู้ใช้ {user.username} ได้รับสิทธิ์เป็นแอดมินแล้ว")
+            return redirect('add_admin')  # ไปที่หน้าจัดการผู้ใช้งาน
+    else:
+        form = AddAdminForm()
+
+    return render(request, 'add_admin.html', {'form': form})
+
+
+def manage_shops(request):
+    query = request.GET.get('q', '')
+
+    # กรณีเป็น Superuser ให้เห็นทุกร้าน
+    if request.user.is_superuser:
+        shops = Shop.objects.filter(name__icontains=query) if query else Shop.objects.all()
+
+    # กรณีเป็น Staff (Admin ร้านค้า) ให้เห็นเฉพาะร้านที่ตนเองเป็นเจ้าของ
+    elif request.user.is_staff:
+        shops = Shop.objects.filter(owner=request.user, name__icontains=query) if query else Shop.objects.filter(
+            owner=request.user)
+
+    # กรณีเป็นผู้ใช้ทั่วไป ให้เห็นเฉพาะร้านที่ตัวเองเป็นเจ้าของ
+    else:
+        shops = Shop.objects.filter(owner=request.user, name__icontains=query) if query else Shop.objects.filter(
+            owner=request.user)
+
+    return render(request, 'manage_shops.html', {'shops': shops, 'query': query})
+
+
+
+from .forms import ShopForm
+def add_shop(request):
+    if request.method == "POST":
+        form = ShopForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('manage_shops')
+    else:
+        form = ShopForm()
+    return render(request, 'shop_form.html', {'form': form})
+
+def edit_shop(request, shop_id):
+    shop = get_object_or_404(Shop, id=shop_id)
+    if request.method == "POST":
+        form = ShopForm(request.POST, instance=shop)
+        if form.is_valid():
+            form.save()
+            return redirect('manage_shops')
+    else:
+        form = ShopForm(instance=shop)
+    return render(request, 'shop_form.html', {'form': form})
+
+def delete_shop(request, shop_id):
+    shop = get_object_or_404(Shop, id=shop_id)
+    shop.delete()
+    return redirect('manage_shops')
+
+
+def shop_detail(request, shop_id):
+    # ดึงข้อมูลร้านค้าตาม ID
+    shop = get_object_or_404(CustomUser, pk=shop_id)
+    return render(request, 'shop_detail.html', {'shop': shop})
+
+
+def product_list(request, shop_id):
+    shop = get_object_or_404(Shop, id=shop_id)  # ใช้ get_object_or_404 เพื่อหลีกเลี่ยงข้อผิดพลาด
+    products = Product.objects.filter(shop=shop)
+    return render(request, 'product_list.html', {'shop': shop, 'products': products})
+
+def add_product(request, shop_id):
+    shop = Shop.objects.get(id=shop_id)
+    if request.method == 'POST':
+        form = ProductForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('product_list', shop_id=shop.id)
+    else:
+        form = ProductForm(initial={'shop': shop})
+    return render(request, 'add_product.html', {'form': form, 'shop': shop})
+
+
+def is_shop_owner(user):
+    return user.is_shop_owner
+
+def shop_owner_request_success(request):
+    return render(request, 'shop_owner_request_success.html')
+
+
+
+
+def add_shop(request):
+    if request.method == "POST":
+        name = request.POST.get("name")
+        owner_username = request.POST.get("owner")  # รับ username จากฟอร์ม
+        owner = User.objects.get(username=owner_username)  # แปลงเป็น User object
+        Shop.objects.create(name=name, owner=owner)
+        return redirect("shop_list")
+
+    return render(request, "add_shop.html")
+
+
+# ฟังก์ชันแก้ไขร้านค้า
+def edit_shop(request, shop_id):
+    shop = get_object_or_404(Shop, id=shop_id)
+    if request.method == "POST":
+        form = ShopForm(request.POST, instance=shop)
+        if form.is_valid():
+            form.save()
+            return redirect('manage_shops')
+    else:
+        form = ShopForm(instance=shop)
+
+    return render(request, 'edit_shop.html', {'form': form, 'shop': shop})
+
+# ฟังก์ชันลบร้านค้า
+def delete_shop(request, shop_id):
+    shop = get_object_or_404(Shop, id=shop_id)
+    shop.delete()
+    return redirect('manage_shops')
+
+
+class AddShopView(CreateView):
+    model = Shop
+    fields = ['name', 'owner', 'location']
+    template_name = 'add_shop.html'
+    success_url = reverse_lazy('shop_list')  # ส่งกลับไปหน้ารายการร้านค้า
+
+
+
+def shop_list(request):
+    shops = Shop.objects.all()  # ดึงร้านค้าทั้งหมด
+    return render(request, 'shop_list.html', {'shops': shops})
+
+
+@login_required
+def create_shop(request):
+    if request.method == 'POST':
+        form = ShopForm(request.POST)
+        if form.is_valid():
+            shop = form.save(commit=False)
+            shop.owner = request.user  # กำหนดเจ้าของให้เป็นผู้ใช้ที่ล็อกอิน
+            shop.save()  # บันทึกข้อมูลร้าน
+            return redirect('manage_shop_admins', shop_id=shop.id)  # ส่ง shop.id ไปยัง URL
+    else:
+        form = ShopForm()
+
+    return render(request, 'create_shop.html', {'form': form})
+
+
+@login_required
+def stock_view(request):
+    print(f"User: {request.user}, is_admin: {request.user.is_admin}, is_shop_owner: {request.user.is_shop_owner}")
+
+    if request.user.is_admin:
+        products = Product.objects.all()
+    elif request.user.is_shop_owner:
+        products = Product.objects.filter(shop__owner=request.user)
+    else:
+        return HttpResponseForbidden("คุณไม่มีสิทธิ์เข้าถึงหน้านี้")
+
+    return render(request, 'stock_view.html', {'products': products})
+
+
+# ฟังก์ชันเพิ่มสต็อก
+def stock_add(request):
+    if request.method == 'POST':
+        form = ProductForm(request.POST)
+        if form.is_valid():
+            form.save()  # เพิ่มสินค้าใหม่
+            return redirect('stock_view')  # เปลี่ยนไปยังหน้ารายการสินค้า
+    else:
+        form = ProductForm()
+
+    return render(request, 'stock_add.html', {'form': form})
+
+
+# ฟังก์ชันแก้ไขสินค้า
+def stock_edit(request, id):
+    product = get_object_or_404(Product, pk=id)
+
+    if request.method == 'POST':
+        form = ProductForm(request.POST, instance=product)
+        if form.is_valid():
+            form.save()  # บันทึกการแก้ไข
+            return redirect('stock_view')
+    else:
+        form = ProductForm(instance=product)
+
+    return render(request, 'stock_edit.html', {'form': form, 'product': product})
+
+
+# ฟังก์ชันลบสินค้า
+def stock_delete(request, id):
+    product = get_object_or_404(Product, pk=id)
+    if request.method == 'POST':
+        product.delete()  # ลบสินค้า
+        return redirect('stock_view')
+    return render(request, 'stock_delete_confirm.html', {'product': product})
+
+
+@login_required
+def manage_shop_admins(request, shop_id):
+    # ดึงข้อมูลร้านที่มี shop_id
+    shop = get_object_or_404(Shop, id=shop_id)
+
+    # ดึงข้อมูลแอดมินของร้าน
+    admins = shop.admins.all()  # สมมติว่า Shop มีฟิลด์ admins ที่เชื่อมโยงกับผู้ใช้ (CustomUser)
+
+    # ดึงข้อมูลผู้ใช้ทั้งหมด
+    all_users = CustomUser.objects.all()
+
+    # การจัดการการเพิ่มหรือลบแอดมิน
+    if request.method == "POST":
+        if 'add_admin' in request.POST:
+            admin_id = request.POST.get("admin_id")
+            admin_user = CustomUser.objects.get(id=admin_id)
+            shop.admins.add(admin_user)  # เพิ่มแอดมินให้กับร้าน
+            messages.success(request, f"เพิ่มแอดมิน {admin_user.username} แล้ว")
+        elif 'remove_admin' in request.POST:
+            admin_id = request.POST.get("admin_id")
+            admin_user = CustomUser.objects.get(id=admin_id)
+            shop.admins.remove(admin_user)  # ลบแอดมินออกจากร้าน
+            messages.success(request, f"ลบแอดมิน {admin_user.username} แล้ว")
+
+    context = {
+        'shop': shop,
+        'admins': admins,
+        'all_users': all_users,
+    }
+
+    return render(request, "manage_shop_admins.html", context)
+
+
+
+@login_required
+def manage_products(request, shop_id):
+    shop = get_object_or_404(Shop, id=shop_id)
+
+    if request.user != shop.owner:
+        return redirect('home')
+
+    products = shop.products.all()
+
+    # เพิ่มสินค้า
+    if request.method == 'POST' and 'add_product' in request.POST:
+        form = ProductForm(request.POST, request.FILES)
+        if form.is_valid():
+            new_product = form.save(commit=False)
+            new_product.shop = shop  # กำหนดให้สินค้าเชื่อมโยงกับร้านนี้
+            new_product.save()
+            return redirect('manage_products', shop_id=shop.id)
+
+    # ลบสินค้า
+    if request.method == 'POST' and 'delete_product' in request.POST:
+        product_id = request.POST.get('product_id')
+        product = get_object_or_404(Product, id=product_id)
+        if product.shop == shop:
+            product.delete()
+        return redirect('manage_products', shop_id=shop.id)
+
+    # แก้ไขสินค้า
+    if request.method == 'POST' and 'edit_product' in request.POST:
+        product_id = request.POST.get('product_id')
+        product = get_object_or_404(Product, id=product_id)
+        form = ProductForm(request.POST, request.FILES, instance=product)
+        if form.is_valid():
+            form.save()
+            return redirect('manage_products', shop_id=shop.id)
+
+    form = ProductForm()  # สำหรับการเพิ่มสินค้าใหม่
+    context = {
+        'shop': shop,
+        'products': products,
+        'form': form,
+    }
+
+    return render(request, 'manage_products.html', context)
+
+
+
+
+
+
+
+
+

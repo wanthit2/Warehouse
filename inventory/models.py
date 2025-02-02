@@ -1,26 +1,31 @@
 # inventory/models.py
+from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User  # นำเข้า User จาก Django
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
+from django.contrib.auth.models import AbstractUser
+from django.conf import settings
+
+
+
 class Member(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='member_profile')
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='member_profile')
 
     def __str__(self):
         return self.user.username
 
+from django.conf import settings
 
-# โมเดล Store
 class Store(models.Model):
     name = models.CharField(max_length=100, verbose_name='ชื่อร้าน')
     description = models.TextField(verbose_name='รายละเอียดร้าน', null=True, default="ไม่มีข้อมูล")
-    owner = models.CharField(max_length=100, default="Default Owner", verbose_name="เจ้าของร้าน")
-
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="เจ้าของร้าน")
+    location = models.CharField(max_length=255, verbose_name="ที่ตั้งร้าน", null=True, blank=True)
     class Meta:
         verbose_name = 'ร้านค้า'
         verbose_name_plural = 'ร้านค้าทั้งหมด'
@@ -29,7 +34,79 @@ class Store(models.Model):
         return self.name
 
 
-# โมเดล Stock
+
+class CustomUser(AbstractUser):
+    USER_TYPE_CHOICES = [
+        ('admin', 'แอดมิน'),
+        ('shop_owner', 'เจ้าของร้าน'),
+        ('customer', 'ลูกค้า'),
+    ]
+
+    username = models.CharField(max_length=150, unique=True)
+    user_type = models.CharField(
+        max_length=20,
+        choices=USER_TYPE_CHOICES,
+        default='customer',
+        verbose_name="ประเภทผู้ใช้"
+    )
+    is_shop_owner = models.BooleanField(default=False, verbose_name='เจ้าของร้าน')
+    is_admin = models.BooleanField(default=False, verbose_name='แอดมิน')
+    is_shop_owner_requested = models.BooleanField(default=False)
+    is_shop_owner_approved = models.BooleanField(default=False)
+    shop_name = models.CharField(max_length=255, blank=True, null=True)
+    reason = models.TextField(blank=True, null=True)
+
+    stores = models.ManyToManyField(Store, related_name='owners', blank=True)  # ความสัมพันธ์ Many-to-Many กับ Store
+
+    def __str__(self):
+        return self.username
+
+
+# โมเดล Store
+
+
+
+
+
+from django.contrib.auth import get_user_model
+
+
+
+class Shop(models.Model):
+    name = models.CharField(max_length=255)
+    location = models.CharField(max_length=255, blank=True, null=False, default="ที่อยู่ยังไม่ได้กำหนด")  # กำหนด default
+    owner = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    admins = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='admin_shops', blank=True)
+
+    def __str__(self):
+        return self.name
+
+
+
+# โมเดล Product
+class Product(models.Model):
+    shop = models.ForeignKey(Shop, related_name='products', on_delete=models.CASCADE, default=1)  # เชื่อมโยงสินค้ากับร้าน
+    store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='products', verbose_name='ร้าน', null=True, blank=True)
+    product_name = models.CharField(max_length=255, default='Default Product Name', verbose_name='ชื่อสินค้า')
+    product_code = models.CharField(max_length=100, unique=True, verbose_name='รหัสสินค้า')
+    description = models.TextField(blank=True, null=True, verbose_name='รายละเอียดสินค้า')
+    price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='ราคา')
+    quantity = models.PositiveIntegerField(verbose_name='จำนวน')
+    image = models.ImageField(upload_to='img/', blank=True, null=True, verbose_name="รูปสินค้า")
+    stock_quantity = models.PositiveIntegerField(default=0)  # จำนวนสินค้าคงคลัง
+
+    class Meta:
+        verbose_name = 'สินค้า'
+        verbose_name_plural = 'สินค้าทั้งหมด'
+
+    def __str__(self):
+        return f"{self.product_name} ({self.product_code})"
+
+    @property
+    def total_value(self):
+        return self.price * self.stock_quantity
+
 class Stock(models.Model):
     store = models.ForeignKey(Store, on_delete=models.CASCADE, verbose_name='ร้านค้า', null=True)
     product_name = models.CharField(max_length=100, verbose_name='ชื่อสินค้า')
@@ -44,28 +121,6 @@ class Stock(models.Model):
 
     def __str__(self):
         return self.product_name
-
-
-# โมเดล Product
-class Product(models.Model):
-    store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='products', verbose_name='ร้าน', null=True, blank=True)
-    product_name = models.CharField(max_length=255, default='Default Product Name', verbose_name='ชื่อสินค้า')
-    product_code = models.CharField(max_length=100, unique=True, verbose_name='รหัสสินค้า')
-    description = models.TextField(blank=True, null=True, verbose_name='รายละเอียดสินค้า')
-    price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='ราคา')
-    quantity = models.PositiveIntegerField(verbose_name='จำนวน')
-    image = models.ImageField(upload_to='img/', blank=True, null=True, verbose_name="รูปสินค้า")
-
-    class Meta:
-        verbose_name = 'สินค้า'
-        verbose_name_plural = 'สินค้าทั้งหมด'
-
-    def __str__(self):
-        return f"{self.product_name} ({self.product_code})"
-
-    @property
-    def total_value(self):
-        return self.price * self.quantity
 
 
 # สร้างรหัสสินค้าอัตโนมัติ
@@ -88,7 +143,7 @@ class Order(models.Model):
     quantity = models.PositiveIntegerField(verbose_name='จำนวน')
     status = models.CharField(max_length=50, verbose_name='สถานะ', default='Pending')
     image = models.ImageField(upload_to='product_images/', verbose_name='รูปสินค้า', null=True, blank=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders', verbose_name='ผู้ใช้งาน')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='orders', verbose_name='ผู้ใช้งาน')
     store = models.ForeignKey('Store', on_delete=models.CASCADE, verbose_name='ร้านค้า', null=True, blank=True)
 
     @property
@@ -125,25 +180,46 @@ def order_create(request, product_id):
 
     return render(request, 'order_create.html', {'product': product})
 
+
+
 class Profile(models.Model):
-    user = models.OneToOneField(
-        User, on_delete=models.CASCADE, related_name="profile"
-    )
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile")
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
-    profile_picture = models.ImageField(
-        upload_to="profile_pictures/", blank=True, null=True
-    )
+    profile_picture = models.ImageField(upload_to="profile_pictures/", blank=True, null=True)
 
     def __str__(self):
         return f"{self.user.username} Profile"
 
 
+
 class UserProfile(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
+    user_type = models.CharField(
+        max_length=50,
+        choices=[('shop', 'ร้านค้า'), ('admin', 'ผู้ดูแลระบบ')],
+        default='shop'
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=[('pending', 'รออนุมัติ'), ('approved', 'อนุมัติแล้ว')],
+        default='pending'  # กำหนดสถานะเริ่มต้นเป็น 'pending'
+    )
 
     def __str__(self):
         return self.user.username
+
+
+
+class ShopOwnerRequest(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)  # ใช้ AUTH_USER_MODEL
+    store_name = models.CharField(max_length=255)
+    description = models.TextField()
+    email = models.EmailField()
+    is_approved = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.store_name
 

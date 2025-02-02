@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>จัดการสินค้า</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>สินค้าในร้าน {{ shop.shop_name }}</h1>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ชื่อสินค้า</th>
+                    <th>รหัสสินค้า</th>
+                    <th>ราคา</th>
+                    <th>จำนวนสต๊อก</th>
+                    <th>มูลค่ารวม</th>
+                    <th>การกระทำ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr>
+                    <td>{{ product.product_name }}</td>
+                    <td>{{ product.product_code }}</td>
+                    <td>{{ product.price }}</td>
+                    <td>{{ product.stock_quantity }}</td>
+                    <td>{{ product.total_value }}</td>
+                    <td>
+                        <a href="{% url 'edit_product' product.id %}" class="btn btn-warning">แก้ไข</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <a href="{% url 'add_product' shop.id %}" class="btn btn-primary">เพิ่มสินค้า</a>
+    </div>
+</body>
+</html>

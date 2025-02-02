@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>จัดการผู้ใช้งาน</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">จัดการผู้ใช้งานที่รอการอนุมัติ</h1>
+
+        <!-- แสดงข้อความแจ้งเตือน -->
+        {% if messages %}
+        <div class="alert alert-success">
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ชื่อผู้ใช้</th>
+                    <th>ประเภทผู้ใช้</th>
+                    <th>สถานะ</th>
+                    <th>การกระทำ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.get_user_type_display }}</td>
+                    <td>{{ user.status }}</td>
+                    <td>
+                        <a href="{% url 'approve_user' user.id %}" class="btn btn-success">อนุมัติ</a>
+                        <a href="{% url 'reject_user' user.id %}" class="btn btn-danger">ปฏิเสธ</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
+
+

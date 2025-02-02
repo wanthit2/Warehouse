@@ -1,0 +1,12 @@
+{% extends 'base_generic.html' %}
+
+{% block content %}
+<h1>เพิ่มสต็อกสินค้า</h1>
+
+<form method="POST">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">เพิ่มสต็อก</button>
+</form>
+
+{% endblock %}

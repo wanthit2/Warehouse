@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สถานะคำขอของคุณ</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">สถานะคำขอของคุณ</h1>
+
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">ชื่อผู้ใช้: {{ user.username }}</h5>
+                <p><strong>ชื่อร้าน:</strong> {% if shop %}{{ shop.name }}{% else %}ยังไม่มีร้าน{% endif %}</p>
+
+                <p><strong>เหตุผล:</strong> {{ user.reason }}</p>
+                <p><strong>สถานะคำขอ:</strong>
+                    {% if user.is_shop_owner_requested %}
+                        รอการอนุมัติ
+                    {% elif user.is_shop_owner_approved %}
+                        คำขอได้รับการอนุมัติ
+                    {% else %}
+                        คำขอถูกปฏิเสธ
+                    {% endif %}
+                </p>
+
+                <!-- เพิ่มปุ่มเพิ่มแอดมิน -->
+                {% if user.is_shop_owner_approved %}
+                    <a href="{% url 'add_admin' %}" class="btn btn-warning mt-3">เพิ่มแอดมิน</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <a href="{% url 'home1' %}" class="btn btn-primary mt-4">กลับไปยังหน้าหลัก</a>
+        <a href="{% url 'shop-owner-request' %}" class="btn btn-primary mt-4">คำรองของเป็นเจ้าของร้าน</a>
+    </div>
+</body>
+</html>

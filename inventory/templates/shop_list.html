@@ -1,0 +1,49 @@
+
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">📌 รายการร้านค้า</h1>
+
+    <!-- Search Form -->
+    <form method="GET" class="d-flex mb-3">
+        <input type="text" name="q" class="form-control me-2" placeholder="🔍 ค้นหาร้านค้า..." value="{{ request.GET.q }}">
+        <button type="submit" class="btn btn-primary">ค้นหา</button>
+    </form>
+
+    <!-- Add Shop Button -->
+    <a href="{% url 'add_shop' %}" class="btn btn-success mb-3">+ เพิ่มร้านค้า</a>
+
+    <!-- Shop Table -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>ชื่อร้าน</th>
+                    <th>เจ้าของ</th>
+                    <th>วันที่สร้าง</th>
+                    <th class="text-center">จัดการ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for shop in shops %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ shop.name }}</td>
+                    <td>{{ shop.owner }}</td>
+                    <td>{{ shop.created_at|date:"Y-m-d H:i" }}</td>
+                    <td class="text-center">
+                        <a href="{% url 'edit_shop' shop.id %}" class="btn btn-warning btn-sm">✏ แก้ไข</a>
+                        <a href="{% url 'delete_shop' shop.id %}" class="btn btn-danger btn-sm" onclick="return confirm('ยืนยันการลบร้าน {{ shop.name }}?')">🗑 ลบ</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted">ไม่มีข้อมูลร้านค้า</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

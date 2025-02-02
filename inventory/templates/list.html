@@ -10,93 +10,93 @@
     <script src="{% static 'script.js' %}"></script>
 </head>
 <body>
-    <div class="container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <a href="{% url 'my_view' %}" class="item-card"><i class="bi bi-bar-chart-line"></i> รายการ</a>
-            <a href="{% url 'order_view' %}" class="item-card"><i class="bi bi-clipboard-data"></i> คำสั่งซื้อ</a>
-            <a href="{% url 'graph_view' %}" class="item-card"><i class="bi bi-pie-chart"></i> กราฟ</a>
-            <a href="{% url 'products' %}" class="item-card"><i class="bi bi-box-seam"></i> สินค้า</a>
-            <a href="{% url 'stock_view' %}" class="item-card"><i class="bi bi-box-seam"></i> สต๊อก</a>
-            <a href="{% url 'home1' %}" class="home-icon"><i class="bi bi-house"></i></a>
-        </aside>
+<div class="container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <a href="{% url 'my_view' %}" class="item-card"><i class="bi bi-bar-chart-line"></i> รายการ</a>
+        <a href="{% url 'order_view' %}" class="item-card"><i class="bi bi-clipboard-data"></i> คำสั่งซื้อ</a>
+        <a href="{% url 'graph_view' %}" class="item-card"><i class="bi bi-pie-chart"></i> กราฟ</a>
+        <a href="{% url 'products' %}" class="item-card"><i class="bi bi-box-seam"></i> สินค้า</a>
+        <a href="{% url 'stock_view' %}" class="item-card"><i class="bi bi-box-seam"></i> สต๊อก</a>
+        <a href="{% url 'home1' %}" class="home-icon"><i class="bi bi-house"></i></a>
+    </aside>
 
-        <!-- Main Content -->
-        <main class="content">
-            <h1>รายการสินค้า</h1>
+    <!-- Main Content -->
+    <main class="content">
+        <h1>รายการสินค้า</h1>
 
-            <!-- Search Bar -->
-            <div class="search-bar">
-                <form method="GET">
-                    <input type="text" name="q" placeholder="ค้นหาสินค้า..." value="{{ query }}">
-                    <button type="submit">ค้นหา</button>
-                </form>
-            </div>
+        <!-- Search Bar -->
+        <div class="search-bar">
+            <form method="GET">
+                <input type="text" name="q" placeholder="ค้นหาสินค้า..." value="{{ query }}">
+                <button type="submit">ค้นหา</button>
+            </form>
+        </div>
 
-            <!-- Action Buttons -->
-            <div class="action-buttons">
-                <button>หมวดหมู่</button>
-                <button>สถานะ</button>
-                <button>กรอง</button>
-            </div>
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button>หมวดหมู่</button>
+            <button>สถานะ</button>
+            <button>กรอง</button>
+        </div>
 
-            <div style="display: flex; justify-content: flex-end;">
-                <a href="{% url 'create_product' %}" class="btn">เพิ่มสินค้า</a>
-            </div>
+        <div style="display: flex; justify-content: flex-end;">
+            <a href="{% url 'create_product' %}" class="btn">เพิ่มสินค้า</a>
+        </div>
 
-            <!-- Products Table -->
-           <table class="table">
-    <thead>
-        <tr>
-            <th>รหัสสินค้า</th>
-            <th>ชื่อสินค้า</th>
-            <th>หมวดหมู่</th>
-            <th>ราคาต่อหน่วย</th>
-            <th>จำนวนในสต๊อก</th>  <!-- เพิ่มคอลัมน์นี้ -->
-            <th>สถานะ</th>
-            <th>จัดการ</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% if products %}
+        <!-- Products Table -->
+        <table class="table">
+            <thead>
+            <tr>
+                <th>รหัสสินค้า</th>
+                <th>ชื่อสินค้า</th>
+                <th>หมวดหมู่</th>
+                <th>ราคาต่อหน่วย</th>
+                <th>จำนวนในสต๊อก</th>  <!-- เพิ่มคอลัมน์นี้ -->
+                <th>สถานะ</th>
+                <th>จัดการ</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% if products %}
             {% for product in products %}
-                <tr>
-                    <td>{{ product.product_code }}</td>
-                    <td>{{ product.product_name }}</td>
-                    <td>{{ product.category }}</td>
-                    <td>{{ product.price }}</td>
-                    <td>
-                        {% if product.stocks.all %}
-                            {{ product.stocks.first.quantity }}  <!-- ดึงจำนวนจาก Stock -->
-                        {% else %}
-                            ไม่พบข้อมูลสินค้าในคลัง
-                        {% endif %}
-                    </td>
-                    <td>{{ product.status }}</td>
-                    <td>
-                        <a href="{% url 'product_detail_view' product.id %}" class="btn">ดูรายละเอียด</a>
-                        {% if user.is_authenticated and user.is_staff %}
-                            <a href="{% url 'edit_product' product.id %}" class="btn">แก้ไข</a>
-                        {% endif %}
-                    </td>
-                </tr>
+            <tr>
+                <td>{{ product.product_code }}</td>
+                <td>{{ product.product_name }}</td>
+                <td>{{ product.category }}</td>
+                <td>{{ product.price }}</td>
+                <td>
+                    {% if product.stocks.all %}
+                    {{ product.stocks.first.quantity }}  <!-- ดึงจำนวนจาก Stock -->
+                    {% else %}
+                    ไม่พบข้อมูลสินค้าในคลัง
+                    {% endif %}
+                </td>
+                <td>{{ product.status|default:"ไม่มีข้อมูล" }}</td>
+                <td>
+                    <a href="{% url 'product_detail_view' product.id %}" class="btn">ดูรายละเอียด</a>
+                    {% if user.is_authenticated and user.is_staff %}
+                    <a href="{% url 'edit_product' product.id %}" class="btn">แก้ไข</a>
+                    {% endif %}
+                </td>
+            </tr>
             {% endfor %}
-        {% else %}
+            {% else %}
             <tr>
                 <td colspan="7" style="text-align: center;">ยังไม่มีสินค้า</td>
             </tr>
-        {% endif %}
-    </tbody>
-</table>
-        </main>
-    </div>
+            {% endif %}
+            </tbody>
+        </table>
+    </main>
+</div>
 
-    <!-- Home Button -->
-    <div class="home">
-        <a href="{% url 'home' %}" class="item-cards">
-            <i class="bi bi-house-door"></i> Home
-        </a>
-    </div>
+<!-- Home Button -->
+<div class="home">
+    <a href="{% url 'home' %}" class="item-cards">
+        <i class="bi bi-house-door"></i> Home
+    </a>
+</div>
 </body>
 </html>
 

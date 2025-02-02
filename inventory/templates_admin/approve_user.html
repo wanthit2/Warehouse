@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>อนุมัติผู้ใช้งาน</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">อนุมัติผู้ใช้งาน</h1>
+        <p>ต้องการอนุมัติผู้ใช้ {{ user_profile.user.username }} เป็นร้านค้าหรือไม่?</p>
+        <form method="POST">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success">อนุมัติ</button>
+            <a href="{% url 'manage_users' %}" class="btn btn-danger">ยกเลิก</a>
+        </form>
+    </div>
+</body>
+</html>

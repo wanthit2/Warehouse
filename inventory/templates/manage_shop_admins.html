@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>จัดการแอดมินของร้าน</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" href="#">📌 จัดการแอดมินของร้าน</a>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <h1 class="mb-4">🛍 จัดการแอดมินของร้าน: {{ shop.name }}</h1>
+
+    <!-- แจ้งเตือนเมื่อมีการเพิ่มหรือลบแอดมิน -->
+    {% if messages %}
+    <div class="alert alert-info">
+        {% for message in messages %}
+        <p>{{ message }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- รายชื่อแอดมินของร้าน -->
+    <h3>แอดมินที่มีสิทธิ์จัดการร้านนี้</h3>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>ชื่อแอดมิน</th>
+                <th>การกระทำ</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for admin in admins %}
+            <tr>
+                <td>{{ admin.username }}</td>
+                <td>
+                    <form method="POST" action="" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="admin_id" value="{{ admin.id }}">
+                        <button type="submit" name="remove_admin" class="btn btn-danger btn-sm">🗑 ลบแอดมิน</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <hr>
+
+    <!-- ฟอร์มสำหรับเพิ่มแอดมิน -->
+    <h3>เพิ่มแอดมินใหม่</h3>
+    <form method="POST">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="admin" class="form-label">เลือกผู้ใช้เพื่อเป็นแอดมิน:</label>
+            <select class="form-select" name="admin_id" id="admin" required>
+                {% for user in all_users %}
+                    <option value="{{ user.id }}">{{ user.username }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" name="add_admin" class="btn btn-success">เพิ่มแอดมิน</button>
+    </form>
+
+    <hr>
+     <a href="{% if user.is_superuser %}{% url 'admin_home' %}{% else %}{% url 'admin_homeshop' %}{% endif %}" class="btn btn-secondary">← กลับไปยังแดชบอร์ด</a>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

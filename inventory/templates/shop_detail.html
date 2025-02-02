@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>รายละเอียดร้านค้า</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">รายละเอียดของร้านค้า</h1>
+
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">ชื่อร้าน: {{ shop.shop_name }}</h5>
+                <p><strong>เจ้าของร้าน:</strong> {{ shop.username }}</p>
+                <p><strong>สถานะ:</strong>
+                    {% if shop.is_shop_owner_approved %}
+                        อนุมัติแล้ว
+                    {% else %}
+                        รอการอนุมัติ
+                    {% endif %}
+                </p>
+                <p><strong>เหตุผล:</strong> {{ shop.reason }}</p>
+
+                <h5 class="mt-4">คำสั่งซื้อของร้านค้า</h5>
+                <ul class="list-group">
+                    {% for order in shop.orders.all %}
+                    <li class="list-group-item">
+                        <strong>คำสั่งซื้อ:</strong> {{ order.order_id }} <br>
+                        <strong>ลูกค้า:</strong> {{ order.customer }} <br>
+                        <strong>สถานะคำสั่งซื้อ:</strong> {{ order.status }}
+                    </li>
+                    {% endfor %}
+                </ul>
+
+            </div>
+        </div>
+
+        <a href="{% url 'manage_shops' %}" class="btn btn-secondary mt-4">กลับไปยังหน้าร้านค้า</a>
+    </div>
+</body>
+</html>
