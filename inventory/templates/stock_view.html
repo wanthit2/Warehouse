@@ -25,60 +25,54 @@
 
         <!-- Main Content -->
         <main class="content">
-            {% if user.is_authenticated %}
-                {% if user.is_superuser or user.store %}
-                    <h1 class="mb-4">สต็อกสินค้า</h1>
+            <h1 class="mb-4">สต็อกสินค้า</h1>
 
-                    <!-- Search Bar -->
-                    <div class="search-bar mb-4">
-                        <form method="get" class="d-flex">
-                            {{ form.as_p }}
-                            <button type="submit" class="btn btn-primary ms-2">ค้นหา</button>
-                        </form>
-                    </div>
+            <!-- Search Bar -->
+            <div class="search-bar mb-4">
+                <form method="get" class="d-flex">
+                    {{ form.as_p }}
+                    <button type="submit" class="btn btn-primary ms-2">ค้นหา</button>
+                </form>
+            </div>
 
-                    <!-- เพิ่มสต็อก -->
-                    <div class="mb-4 text-end">
-                        <a href="{% url 'create_stock' %}" class="btn btn-success">เพิ่มสต็อกสินค้าใหม่</a>
-                    </div>
+            <!-- เพิ่มสต็อก -->
+            <div class="mb-4 text-end">
+                <a href="{% url 'create_stock' %}" class="btn btn-success">เพิ่มสต็อกสินค้าใหม่</a>
+            </div>
 
-                    <!-- Stock Table -->
-                    <table class="table table-bordered table-striped">
-                        <thead class="table-dark">
+            <!-- Stock Table -->
+            <table class="table table-bordered table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>รหัสสินค้า</th>
+                        <th>ชื่อสินค้า</th>
+                        <th>จำนวนคงเหลือ</th>
+                        <th>ราคา</th>
+                        <th>วันที่เพิ่มสินค้า</th>
+                        <th>ร้านค้า</th>
+                        <th>รายละเอียดสินค้า</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if products %}
+                        {% for item in products %}
                             <tr>
-                                <th>รหัสสินค้า</th>
-                                <th>ชื่อสินค้า</th>
-                                <th>จำนวนคงเหลือ</th>
-                                <th>ราคา</th>
-                                <th>วันที่เพิ่มสินค้า</th>
-                                <th>ร้านค้า</th>
-                                <th>รายละเอียดสินค้า</th>
+                                <td>{{ item.id }}</td>
+                                <td>{{ item.product_name }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>{{ item.price }}</td>
+                                <td>{{ item.added_date }}</td>
+                                <td>{{ item.get_store_name }}</td>
+                                <td>{{ item.description }}</td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            {% if products %}
-                                {% for item in products %}
-                                    <tr>
-                                        <td>{{ item.id }}</td>
-                                        <td>{{ item.product_name }}</td>
-                                        <td>{{ item.quantity }}</td>
-                                        <td>{{ item.price }}</td>
-                                        <td>{{ item.added_date }}</td>
-                                        <td>{{ item.store.name }}</td>
-                                        <td>{{ item.description }}</td>
-                                    </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr>
-                                    <td colspan="7" class="text-center">ยังไม่มีข้อมูล</td>
-                                </tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
-                {% else %}
-                    <h2 class="text-danger">คุณไม่มีสิทธิ์เข้าถึงหน้านี้</h2>
-                {% endif %}
-            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center">ยังไม่มีข้อมูล</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
         </main>
     </div>
 

@@ -64,7 +64,7 @@
     {% elif user.is_shop_owner %}
         <a href="{% url 'admin_homeshop' %}" class="btn btn-secondary">← กลับไปที่แดชบอร์ดเจ้าของร้าน</a>
     {% else %}
-        <a href="{% url 'home' %}" class="btn btn-secondary">← กลับ</a>
+        <a href="{% url 'admin_homeshop' %}" class="btn btn-secondary">← กลับ</a>
     {% endif %}
 </div>
 

@@ -413,10 +413,8 @@ def edit_profile(request):
 
 @login_required
 def profile_view(request):
-    try:
-        user_profile = UserProfile.objects.get(user=request.user)
-    except UserProfile.DoesNotExist:
-        user_profile = None
+    # ใช้ filter() แทน get() เพื่อดึงหลายรายการและใช้ first() เพื่อดึงแค่ตัวแรก
+    user_profile = UserProfile.objects.filter(user=request.user).first()  # ใช้ first() เพื่อลดปัญหาหลายรายการ
 
     if request.method == 'POST':
         form = UserProfileForm(request.POST, request.FILES, instance=user_profile)
@@ -427,6 +425,8 @@ def profile_view(request):
         form = UserProfileForm(instance=user_profile)
 
     return render(request, 'profile.html', {'form': form, 'user_profile': user_profile})
+
+
 
 
 
@@ -615,9 +615,6 @@ def create_product(request):
 
 
 
-
-
-
 from django.db.models import Q
 @login_required
 def admin_home_view(request):
@@ -634,37 +631,6 @@ def admin_home_view(request):
 
         # ส่งข้อมูลร้านและแอดมินให้ template
         return render(request, 'admin_home.html', {'admins_by_shop': admins_by_shop})
-
-    # debug ตรวจสอบค่าของ user
-    print("User type:", request.user.user_type)
-    print("Is shop owner approved:", request.user.is_shop_owner_approved)
-
-    # ตรวจสอบว่า user เป็นเจ้าของร้านหรือแอดมินร้าน
-    if request.user.is_shop_owner_approved and request.user.user_type in ['shop_owner', 'shop_admin']:
-        try:
-            # ค้นหาร้านที่ผู้ใช้เป็นเจ้าของหรือแอดมิน
-            shop = Shop.objects.filter(owner=request.user).first()
-
-            # ถ้าไม่พบร้าน
-            if not shop:
-                # ตรวจสอบว่า user เป็นแอดมินของร้านใดร้านหนึ่ง
-                shop = Shop.objects.filter(admins=request.user).first()
-
-            # debug ข้อมูลร้านที่ค้นพบ
-            if shop:
-                print("Found shop:", shop.name)
-                return render(request, 'admin_homeshop.html', {'shop': shop})
-            else:
-                return HttpResponseForbidden("คุณไม่มีสิทธิ์เข้าถึงหน้านี้")
-
-        except Shop.DoesNotExist:
-            return HttpResponseForbidden("คุณไม่มีสิทธิ์เข้าถึงหน้านี้")
-
-    # ถ้าไม่ใช่เจ้าของร้านที่ได้รับการอนุมัติหรือแอดมินร้าน
-    return HttpResponseForbidden("คุณไม่มีสิทธิ์เข้าถึงหน้านี้")
-
-
-
 
 
 def manage_users(request):
@@ -697,11 +663,23 @@ def approve_user(request, user_id):
 
 @login_required
 def admin_home_shop(request):
-    # ดึงร้านที่เจ้าของเป็นผู้ใช้ที่ล็อกอิน
-    shop = get_object_or_404(Shop, owner=request.user)
+    try:
+        # ค้นหาร้านที่ผู้ใช้เป็นเจ้าของ
+        shop = Shop.objects.filter(owner=request.user).first()
 
-    # ส่งข้อมูลร้านไปยังเทมเพลต
-    return render(request, "admin_homeshop.html", {'shop': shop})
+        if not shop:
+            # ค้นหาว่าผู้ใช้เป็นแอดมินของร้านไหน
+            shop = Shop.objects.filter(admins=request.user).first()
+
+        # ให้ทุกคนที่มีร้านสามารถเข้าถึงได้
+        if shop:
+            return render(request, 'admin_homeshop.html', {'shop': shop})
+
+        # ถ้าไม่พบร้านให้แสดงข้อความ
+        return render(request, 'admin_homeshop.html', {})  # กรณีไม่มีร้านก็ให้แสดงหน้า
+
+    except Shop.DoesNotExist:
+        return render(request, 'admin_homeshop.html', {})  # กรณีไม่มีร้านให้แสดงหน้า
 
 
 
@@ -914,14 +892,27 @@ def create_shop(request):
     return render(request, 'create_shop.html', {'form': form})
 
 
-@login_required
-def stock_view(request):
-    print(f"User: {request.user}, is_admin: {request.user.is_admin}, is_shop_owner: {request.user.is_shop_owner}")
+from django.shortcuts import render
+from django.http import HttpResponseForbidden
+from .models import Product
 
-    if request.user.is_admin:
+
+def stock_view(request):
+    # ตรวจสอบว่าผู้ใช้ล็อกอินหรือไม่
+    if not request.user.is_authenticated:
+        return HttpResponseForbidden("คุณต้องเข้าสู่ระบบก่อน")
+
+    # ถ้าเป็น superuser ให้ดึงข้อมูลสินค้าทั้งหมด
+    if request.user.is_superuser:
         products = Product.objects.all()
-    elif request.user.is_shop_owner:
-        products = Product.objects.filter(shop__owner=request.user)
+
+    # ถ้าเป็นเจ้าของร้านหรือแอดมินของร้าน ให้ดึงข้อมูลเฉพาะของร้านตัวเอง
+    elif request.user.shop_set.exists():  # ตรวจสอบว่าผู้ใช้เป็นเจ้าของร้านหรือไม่
+        products = Product.objects.filter(shop__owner=request.user)  # ค้นหาสินค้าของร้านที่ผู้ใช้เป็นเจ้าของ
+
+    elif request.user.admin_shops.exists():  # ตรวจสอบว่าเป็นแอดมินของร้าน
+        products = Product.objects.filter(shop__admins=request.user)  # ค้นหาสินค้าของร้านที่ผู้ใช้เป็นแอดมิน
+
     else:
         return HttpResponseForbidden("คุณไม่มีสิทธิ์เข้าถึงหน้านี้")
 

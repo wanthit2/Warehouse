@@ -49,6 +49,8 @@ class CustomUser(AbstractUser):
         default='customer',
         verbose_name="ประเภทผู้ใช้"
     )
+
+    is_superadmin = models.BooleanField(default=False, verbose_name='ซุปเปอร์แอดมิน')  # ✅ เพิ่มฟิลด์นี้
     is_shop_owner = models.BooleanField(default=False, verbose_name='เจ้าของร้าน')
     is_admin = models.BooleanField(default=False, verbose_name='แอดมิน')
     is_shop_owner_requested = models.BooleanField(default=False)
@@ -60,6 +62,7 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return self.username
+
 
 
 # โมเดล Store
@@ -87,7 +90,7 @@ class Shop(models.Model):
 # โมเดล Product
 class Product(models.Model):
     shop = models.ForeignKey(Shop, related_name='products', on_delete=models.CASCADE, default=1)  # เชื่อมโยงสินค้ากับร้าน
-    store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='products', verbose_name='ร้าน', null=True, blank=True)
+    store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='products', verbose_name='ร้าน', null=True, blank=True)  # ใช้ store หรือ shop ถ้าไม่มี store
     product_name = models.CharField(max_length=255, default='Default Product Name', verbose_name='ชื่อสินค้า')
     product_code = models.CharField(max_length=100, unique=True, verbose_name='รหัสสินค้า')
     description = models.TextField(blank=True, null=True, verbose_name='รายละเอียดสินค้า')
@@ -95,6 +98,7 @@ class Product(models.Model):
     quantity = models.PositiveIntegerField(verbose_name='จำนวน')
     image = models.ImageField(upload_to='img/', blank=True, null=True, verbose_name="รูปสินค้า")
     stock_quantity = models.PositiveIntegerField(default=0)  # จำนวนสินค้าคงคลัง
+    added_date = models.DateTimeField(default=timezone.now, verbose_name="วันที่เพิ่มสินค้า")
 
     class Meta:
         verbose_name = 'สินค้า'
@@ -106,6 +110,10 @@ class Product(models.Model):
     @property
     def total_value(self):
         return self.price * self.stock_quantity
+
+    # ฟังก์ชันสำหรับคืนค่าร้านที่เชื่อมโยง
+    def get_store_name(self):
+        return self.store.name if self.store else self.shop.name  # ใช้ store ถ้ามี มิฉะนั้นใช้ shop
 
 class Stock(models.Model):
     store = models.ForeignKey(Store, on_delete=models.CASCADE, verbose_name='ร้านค้า', null=True)

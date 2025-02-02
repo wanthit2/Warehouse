@@ -79,6 +79,7 @@ urlpatterns = [
 
 
 
+
     #stock
     path('create_stock/', views.create_stock, name='create_stock'),
     path('update_stock/', views.update_stock, name='update_stock'),
