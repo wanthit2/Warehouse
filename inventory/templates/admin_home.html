@@ -48,8 +48,8 @@
                 <div class="card text-bg-primary shop-card">
                     <div class="card-body">
                         <h5 class="card-title">คำสั่งซื้อทั้งหมด</h5>
-                        <p class="card-text">จำนวน: 100 รายการ</p>
-                        <a href="/admin/orders/" class="btn btn-light">ดูรายละเอียด</a>
+                        <p class="card-text">จำนวน: {{ total_orders_count }} รายการ</p>
+                        <a href="{% url 'admin_order_list' %}" class="btn btn-light">ดูรายละเอียด</a>
                     </div>
                 </div>
             </div>
@@ -57,8 +57,8 @@
                 <div class="card text-bg-success shop-card">
                     <div class="card-body">
                         <h5 class="card-title">คำสั่งซื้อที่ดำเนินการแล้ว</h5>
-                        <p class="card-text">จำนวน: 50 รายการ</p>
-                        <a href="/admin/orders/completed/" class="btn btn-light">ดูรายละเอียด</a>
+                        <p class="card-text">จำนวน: {{ completed_orders_count }} รายการ</p>
+                        <a href="{% url 'completed_orders' %}" class="btn btn-light">ดูรายละเอียด</a>
                     </div>
                 </div>
             </div>
@@ -66,8 +66,8 @@
                 <div class="card text-bg-warning shop-card">
                     <div class="card-body">
                         <h5 class="card-title">คำสั่งซื้อที่รอดำเนินการ</h5>
-                        <p class="card-text">จำนวน: 30 รายการ</p>
-                        <a href="/admin/orders/pending/" class="btn btn-light">ดูรายละเอียด</a>
+                        <p class="card-text">จำนวน: {{ pending_orders_count }} รายการ</p>
+                        <a href="{% url 'pending_orders' %}" class="btn btn-light">ดูรายละเอียด</a>
                     </div>
                 </div>
             </div>
@@ -101,7 +101,7 @@
         <!-- เมนูการจัดการต่างๆ -->
         <h2 class="mt-4">เมนูการจัดการ</h2>
         <ul class="list-group">
-            <li class="list-group-item"><a href="/admin/orders/">จัดการคำสั่งซื้อ</a></li>
+            <li class="list-group-item"><a href="{% url 'admin_order_list' %}">จัดการคำสั่งซื้อ</a></li>
             {% if user.is_superuser %}
             <li class="list-group-item"><a href="{% url 'manage_users' %}">จัดการผู้ใช้</a></li>
             {% endif %}

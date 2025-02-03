@@ -76,6 +76,8 @@ urlpatterns = [
     path('shop-list/', views.shop_list, name='shop_list'),
     path('create/', views.create_shop, name='create_shop'),
     path('admin-shop/', views.admin_home_shop, name='admin_homeshop'),
+    path('admin_delete_order/<int:order_id>/', views.admin_delete_order, name='admin_delete_order'),
+    path('update_order_status/<int:order_id>/', views.update_order_status, name='update_order_status'),
 
 
 
@@ -101,6 +103,11 @@ urlpatterns = [
     path('manage_admins/<int:shop_id>/', views.manage_shop_admins, name='manage_admins'),
     path('shop/<int:shop_id>/manage_admins/', views.manage_shop_admins, name='manage_shop_admins'),
     path('manage-products/<int:shop_id>/', views.manage_products, name='manage_products'),
-
+    path('admin_order_list/', views.admin_order_list, name='admin_order_list'),
+    path('admin/orders/', views.order_list, name='order_list'),  # คำสั่งซื้อทั้งหมด
+    path('admin/orders/completed/', views.order_list, {'status': 'completed'}, name='completed_orders'),
+    # คำสั่งซื้อที่ดำเนินการแล้ว
+    path('admin/orders/pending/', views.order_list, {'status': 'pending'}, name='pending_orders'),
+    # คำสั่งซื้อที่รอดำเนินการ
 
 ]

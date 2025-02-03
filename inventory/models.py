@@ -85,20 +85,33 @@ class Shop(models.Model):
     def __str__(self):
         return self.name
 
+class Category(models.Model):
+    name = models.CharField(max_length=255, unique=True)
 
+    def __str__(self):
+        return self.name
 
 # โมเดล Product
 class Product(models.Model):
-    shop = models.ForeignKey(Shop, related_name='products', on_delete=models.CASCADE, default=1)  # เชื่อมโยงสินค้ากับร้าน
-    store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='products', verbose_name='ร้าน', null=True, blank=True)  # ใช้ store หรือ shop ถ้าไม่มี store
+    shop = models.ForeignKey(Shop, related_name='products', on_delete=models.CASCADE, default=1)
+    store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='products', verbose_name='ร้าน', null=True, blank=True)
     product_name = models.CharField(max_length=255, default='Default Product Name', verbose_name='ชื่อสินค้า')
     product_code = models.CharField(max_length=100, unique=True, verbose_name='รหัสสินค้า')
     description = models.TextField(blank=True, null=True, verbose_name='รายละเอียดสินค้า')
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='ราคา')
     quantity = models.PositiveIntegerField(verbose_name='จำนวน')
     image = models.ImageField(upload_to='img/', blank=True, null=True, verbose_name="รูปสินค้า")
-    stock_quantity = models.PositiveIntegerField(default=0)  # จำนวนสินค้าคงคลัง
+    stock_quantity = models.PositiveIntegerField(default=0, verbose_name="จำนวนสินค้าคงคลัง")
     added_date = models.DateTimeField(default=timezone.now, verbose_name="วันที่เพิ่มสินค้า")
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True, blank=True)
+
+    # ✅ เพิ่มฟิลด์ `status`
+    STATUS_CHOICES = [
+        ('available', 'Available'),
+        ('out_of_stock', 'Out of Stock'),
+        ('discontinued', 'Discontinued'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available', verbose_name="สถานะสินค้า")
 
     class Meta:
         verbose_name = 'สินค้า'
@@ -113,7 +126,8 @@ class Product(models.Model):
 
     # ฟังก์ชันสำหรับคืนค่าร้านที่เชื่อมโยง
     def get_store_name(self):
-        return self.store.name if self.store else self.shop.name  # ใช้ store ถ้ามี มิฉะนั้นใช้ shop
+        return self.store.name if self.store else self.shop.name
+  # ใช้ store ถ้ามี มิฉะนั้นใช้ shop
 
 class Stock(models.Model):
     store = models.ForeignKey(Store, on_delete=models.CASCADE, verbose_name='ร้านค้า', null=True)
@@ -145,14 +159,17 @@ def generate_product_code(sender, instance, **kwargs):
 
 
 class Order(models.Model):
-    order_id = models.AutoField(primary_key=True, verbose_name='ลำดับ')
+    order_id = models.AutoField(primary_key=True)
     product_name = models.CharField(max_length=255, verbose_name='ชื่อสินค้า', null=True, blank=True)
+    product_code = models.CharField(max_length=255, verbose_name='รหัสสินค้า', null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='ราคา')
     quantity = models.PositiveIntegerField(verbose_name='จำนวน')
     status = models.CharField(max_length=50, verbose_name='สถานะ', default='Pending')
     image = models.ImageField(upload_to='product_images/', verbose_name='รูปสินค้า', null=True, blank=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='orders', verbose_name='ผู้ใช้งาน')
     store = models.ForeignKey('Store', on_delete=models.CASCADE, verbose_name='ร้านค้า', null=True, blank=True)
+    items = models.ManyToManyField('Product', related_name='orders', blank=True)
+    shop = models.ForeignKey('Shop', on_delete=models.CASCADE, verbose_name='ร้านค้า', null=True, blank=True)
 
     @property
     def total_price(self):

@@ -24,7 +24,7 @@ from .forms import ShopOwnerRequestForm
 from .forms import CustomUserProfileForm
 from django.http import HttpResponseForbidden, HttpResponseNotFound, JsonResponse, HttpResponse
 from inventory.models import Shop
-
+from .models import Product, Category
 
 def home1(request):
     return render(request, 'home.html')
@@ -53,13 +53,37 @@ def category_view(request):
 
 def my_view(request):
     query = request.GET.get('q', '')  # รับค่าค้นหาจาก GET parameter
-    products = Product.objects.all()  # ดึงข้อมูลสินค้าทั้งหมด
+    category_filter = request.GET.get('category', '')  # รับค่าหมวดหมู่จาก GET
+    status_filter = request.GET.get('status', '')  # รับค่าสถานะจาก GET
 
-    # ถ้ามีการค้นหา
+    # ดึงสินค้าทั้งหมด
+    products = Product.objects.all()
+
+    # กรองตามชื่อสินค้า (ค้นหา)
     if query:
-        products = products.filter(product_name__icontains=query)  # กรองชื่อสินค้าตามที่ค้นหา
+        products = products.filter(product_name__icontains=query)
 
-    return render(request, 'list.html', {'products': products, 'query': query})
+    # กรองตามหมวดหมู่
+    if category_filter:
+        products = products.filter(category__name=category_filter)
+
+    # กรองตามสถานะ
+    if status_filter:
+        products = products.filter(status=status_filter)
+
+    # ดึงรายการหมวดหมู่และสถานะทั้งหมดสำหรับ dropdown
+    categories = Category.objects.all()
+    statuses = Product.objects.values_list('status', flat=True).distinct()
+
+    return render(request, 'list.html', {
+        'products': products,
+        'query': query,
+        'categories': categories,
+        'statuses': statuses,
+        'selected_category': category_filter,
+        'selected_status': status_filter,
+    })
+
 
 
 @login_required
@@ -76,31 +100,32 @@ def product_detail_view(request, id):
     product = get_object_or_404(Product, id=id)
     return render(request, 'product_detail.html', {'product': product})
 
-def edit_product(request, pk):
-    product = get_object_or_404(Product, pk=pk)
-
+def edit_product(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
     if request.method == 'POST':
         form = ProductForm(request.POST, instance=product)
         if form.is_valid():
             form.save()
-            return redirect('product_detail_view', pk=product.pk)  # ไปที่หน้ารายละเอียดของสินค้า
+            return redirect('manage_products')  # แก้ไขให้ตรงกับ URL ของหน้าจัดการสินค้า
     else:
         form = ProductForm(instance=product)
 
     return render(request, 'edit_product.html', {'form': form, 'product': product})
 
 
-def create_order(request):
-    if request.method == 'POST':
-        form = OrderForm(request.POST)
-        if form.is_valid():
-            form.save()  # บันทึกคำสั่งซื้อใหม่
-            messages.success(request, 'เพิ่มคำสั่งซื้อเรียบร้อยแล้ว')
-            return redirect('my_view')  # เปลี่ยนไปที่หน้าแสดงรายการคำสั่งซื้อ
-    else:
-        form = OrderForm()
+def create_order(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
 
-    return render(request, 'create_order.html', {'form': form})
+    if request.method == 'POST':
+        form = OrderForm(request.POST, product=product)
+        if form.is_valid():
+            form.save()
+            return redirect('order_view')
+    else:
+        form = OrderForm(product=product)
+
+    return render(request, 'create_order.html', {'form': form, 'product': product})
+
 
 def delete_order(request, order_id):
     order = get_object_or_404(Order, order_id=order_id)  # ค้นหาคำสั่งซื้อที่ต้องการลบ
@@ -343,6 +368,8 @@ def order_confirmation(request, product_id):
             status='pending',  # คำสั่งซื้อที่ยังไม่เสร็จสมบูรณ์
             image=product.image,
             user=request.user,  # เชื่อมโยงกับผู้ใช้งานที่ล็อกอินอยู่
+            shop=product.shop,  # ดึงร้านค้าจากสินค้า
+            store=product.store,  # ดึง store จากสินค้า
         )
 
         # Redirect ไปยังหน้าคำสั่งซื้อสำเร็จ
@@ -359,6 +386,7 @@ def order_confirmation(request, product_id):
 
 
 
+
 def order_success(request):
     return render(request, 'order_success.html')
 
@@ -370,6 +398,55 @@ def order_list(request):
     return render(request, 'order_list.html', {'orders': orders})
 
 
+@login_required
+def admin_order_list(request):
+    # รับค่าตัวกรอง `status` จาก URL (GET Parameter)
+    status = request.GET.get('status', None)
+
+    if request.user.is_superuser:
+        # ถ้าเป็น SuperAdmin ให้เห็นคำสั่งซื้อทั้งหมด
+        orders = Order.objects.all()
+    else:
+        # ดึงร้านที่ผู้ใช้เป็นเจ้าของหรือเป็นแอดมิน
+        owned_shops = Shop.objects.filter(owner=request.user).values_list('id', flat=True)
+        managed_shops = Shop.objects.filter(admins=request.user).values_list('id', flat=True)
+        owned_stores = Store.objects.filter(owner=request.user).values_list('id', flat=True)
+        managed_stores = Store.objects.filter(admins=request.user).values_list('id', flat=True)
+
+        # รวมร้านที่ผู้ใช้เกี่ยวข้อง
+        related_shop_ids = list(owned_shops) + list(managed_shops)
+        related_store_ids = list(owned_stores) + list(managed_stores)
+
+        # กรองเฉพาะคำสั่งซื้อที่เกี่ยวข้องกับร้านของผู้ใช้
+        orders = Order.objects.filter(
+            Q(shop_id__in=related_shop_ids) | Q(store_id__in=related_store_ids)
+        ).distinct()
+
+    # ถ้ามีการส่ง `status` ให้กรองเฉพาะคำสั่งซื้อนั้น
+    if status:
+        orders = orders.filter(status=status)
+
+    return render(request, 'admin_order_list.html', {'orders': orders})
+
+
+@login_required
+def update_order_status(request, order_id):
+    order = get_object_or_404(Order, pk=order_id)
+    # ที่นี่สามารถแก้ไขสถานะคำสั่งซื้อได้
+    if request.method == 'POST':
+        new_status = request.POST.get('status')
+        order.status = new_status
+        order.save()
+        return redirect('admin_order_list')  # เปลี่ยนเส้นทางไปยังหน้าแสดงรายการคำสั่งซื้อ
+
+    return render(request, 'update_order_status.html', {'order': order})
+
+@login_required
+def admin_delete_order(request, order_id):
+    order = get_object_or_404(Order, pk=order_id)
+    if request.method == 'POST':
+        order.delete()
+        return redirect('admin_order_list')
 
 @login_required
 def profile(request):
@@ -994,21 +1071,22 @@ def manage_shop_admins(request, shop_id):
 def manage_products(request, shop_id):
     shop = get_object_or_404(Shop, id=shop_id)
 
-    if request.user != shop.owner:
+    # ให้ทั้งเจ้าของร้านและ Admin ร้านค้า สามารถจัดการสินค้าได้
+    if request.user != shop.owner and request.user not in shop.admins.all():
         return redirect('home')
 
     products = shop.products.all()
 
-    # เพิ่มสินค้า
+    # ✅ เพิ่มสินค้า
     if request.method == 'POST' and 'add_product' in request.POST:
         form = ProductForm(request.POST, request.FILES)
         if form.is_valid():
             new_product = form.save(commit=False)
-            new_product.shop = shop  # กำหนดให้สินค้าเชื่อมโยงกับร้านนี้
+            new_product.shop = shop  # เชื่อมโยงสินค้าเข้ากับร้านนี้
             new_product.save()
             return redirect('manage_products', shop_id=shop.id)
 
-    # ลบสินค้า
+    # ✅ ลบสินค้า (ให้เฉพาะเจ้าของร้านหรือลบสินค้าในร้านตัวเอง)
     if request.method == 'POST' and 'delete_product' in request.POST:
         product_id = request.POST.get('product_id')
         product = get_object_or_404(Product, id=product_id)
@@ -1016,7 +1094,7 @@ def manage_products(request, shop_id):
             product.delete()
         return redirect('manage_products', shop_id=shop.id)
 
-    # แก้ไขสินค้า
+    # ✅ แก้ไขสินค้า
     if request.method == 'POST' and 'edit_product' in request.POST:
         product_id = request.POST.get('product_id')
         product = get_object_or_404(Product, id=product_id)
@@ -1025,7 +1103,7 @@ def manage_products(request, shop_id):
             form.save()
             return redirect('manage_products', shop_id=shop.id)
 
-    form = ProductForm()  # สำหรับการเพิ่มสินค้าใหม่
+    form = ProductForm()  # สำหรับเพิ่มสินค้าใหม่
     context = {
         'shop': shop,
         'products': products,
@@ -1033,10 +1111,6 @@ def manage_products(request, shop_id):
     }
 
     return render(request, 'manage_products.html', context)
-
-
-
-
 
 
 

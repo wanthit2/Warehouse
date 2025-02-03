@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>รายการคำสั่งซื้อ</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        .status-form select, .status-form button {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .status-form button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+        .status-form button:hover {
+            background-color: #45a049;
+        }
+        .delete-button {
+            background-color: red;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .delete-button:hover {
+            background-color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+
+<h1>📦 รายการคำสั่งซื้อ</h1>
+
+<table>
+    <thead>
+        <tr>
+            <th>ลำดับ</th>
+            <th>ชื่อสินค้า</th>
+            <th>ราคา</th>
+            <th>จำนวน</th>
+            <th>รวม</th>
+            <th>สถานะ</th>
+            <th>ร้านค้า</th>
+            <th>จัดการสถานะ</th>
+            {% if request.user.is_superuser %}
+            <th>ลบคำสั่งซื้อ</th>
+            {% endif %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for order in orders %}
+            {% if request.user.is_superuser or order.shop.owner == request.user or request.user in order.shop.admins.all %}
+            <tr>
+                <td>{{ order.order_id }}</td>
+                <td>{{ order.product_name }}</td>
+                <td>{{ order.price|floatformat:2 }}</td>
+                <td>{{ order.quantity }}</td>
+                <td>{{ order.total_price|floatformat:2 }}</td>
+                <td>{{ order.status }}</td>
+                <td>
+                    {% if order.store %}
+                        {{ order.store.name }}
+                    {% elif order.shop %}
+                        {{ order.shop.name }}
+                    {% else %}
+                        ไม่มีร้าน
+                    {% endif %}
+                </td>
+
+                <td>
+                    {% if order.id %}
+                        <a href="{% url 'update_order_status' order.id %}" title="แก้ไขสถานะคำสั่งซื้อ {{ order.product_name }}">🔄 แก้ไขสถานะ</a>
+                    {% else %}
+                        <span>ไม่สามารถแก้ไขสถานะได้</span>
+                    {% endif %}
+                </td>
+
+                {% if request.user.is_superuser %}
+                <td>
+                    {% if order.id %}
+                        <form method="POST" action="{% url 'admin_delete_order' order.id %}" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบคำสั่งซื้อนี้?');">
+                            {% csrf_token %}
+                            <button type="submit" class="delete-button">🗑️ ลบ</button>
+                        </form>
+                    {% else %}
+                        <span>ไม่สามารถลบคำสั่งซื้อได้</span>
+                    {% endif %}
+                </td>
+                {% endif %}
+            </tr>
+            {% endif %}
+        {% empty %}
+        <tr>
+            <td colspan="{% if request.user.is_superuser %}9{% else %}8{% endif %}" style="text-align: center;">
+                ไม่มีคำสั่งซื้อในระบบ
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+</body>
+</html>

@@ -13,7 +13,6 @@
     <div class="container">
         <!-- Sidebar -->
         <aside class="sidebar">
-
             <a href="{% url 'my_view' %}" class="item-card"><i class="bi bi-bar-chart-line"></i> รายการ</a>
             <a href="{% url 'order_view' %}" class="item-card"><i class="bi bi-clipboard-data"></i> คำสั่งซื้อ</a>
             <a href="{% url 'graph_view' %}" class="item-card"><i class="bi bi-pie-chart"></i> กราฟ</a>
@@ -55,7 +54,13 @@
                         {% for order in orders %}
                             <tr class="td">
                                 <td>{{ forloop.counter }}</td> <!-- แสดงลำดับ -->
-                                <td><img src="{{ order.image.url }}" alt="Product Image" width="50" height="50"></td> <!-- แสดงรูปสินค้า -->
+                                <td>
+                                    {% if order.image and order.image.url %}
+                                        <img src="{{ order.image.url }}" alt="Product Image" style="width: 80px; height: 80px;">
+                                    {% else %}
+                                        <img src="{% static 'images/default-product.jpg' %}" alt="No Image Available" style="width: 80px; height: 80px;">
+                                    {% endif %}
+                                </td>
                                 <td>{{ order.product_name }}</td>
                                 <td>{{ order.price }} บาท</td>
                                 <td>{{ order.quantity }} ชิ้น</td>
@@ -84,3 +89,4 @@
     </div>
 </body>
 </html>
+

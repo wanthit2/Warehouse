@@ -30,21 +30,34 @@ class OrderForm(forms.ModelForm):
         fields = ['quantity']
 
     def __init__(self, *args, **kwargs):
-        # รับ product ผ่าน kwargs
         self.product = kwargs.pop('product', None)
         super().__init__(*args, **kwargs)
 
-    def save(self, commit=True):
-        # คำนวณยอดรวมก่อนบันทึก
-        order = super().save(commit=False)
         if self.product:
-            order.product_code = self.product.product_code
-            order.name = self.product.product_name
+            self.fields['product_name'].initial = self.product.product_name
+            self.fields['price'].initial = self.product.price
+
+    def save(self, commit=True):
+        order = super().save(commit=False)
+
+        if self.product:
+            # ดึงข้อมูลจาก product
+            order.product_name = self.product.product_name
             order.price = self.product.price
-            order.total = order.price * order.quantity
+            order.total_price = order.price * order.quantity
+
+            # บันทึกค่า shop และ store
+            order.shop_id = self.product.shop.id if self.product.shop else None
+            order.store_id = self.product.store.id if self.product.store else None
+
+            # กำหนดร้านค้า (shop) และ store
+            order.shop = self.product.shop
+            order.store = self.product.store
+
         if commit:
             order.save()
         return order
+
 
 class LoginForm(AuthenticationForm):
     username = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'Username'}))
@@ -164,8 +177,7 @@ class AddAdminForm(forms.Form):
 class ShopForm(forms.ModelForm):
     class Meta:
         model = Shop
-        fields = ['name', 'location']
-
+        fields = ['name', 'location', 'owner', 'admins']
 
 
 class StoreForm(forms.ModelForm):
