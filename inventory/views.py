@@ -1066,53 +1066,48 @@ def manage_shop_admins(request, shop_id):
     return render(request, "manage_shop_admins.html", context)
 
 
-
 @login_required
 def manage_products(request, shop_id):
     shop = get_object_or_404(Shop, id=shop_id)
 
-    # ให้ทั้งเจ้าของร้านและ Admin ร้านค้า สามารถจัดการสินค้าได้
+    # เช็คสิทธิ์การเข้าถึง
     if request.user != shop.owner and request.user not in shop.admins.all():
         return redirect('home')
 
     products = shop.products.all()
+    product_forms = [(product, ProductForm(instance=product)) for product in products]  # ✅ สร้างฟอร์มสำหรับแต่ละสินค้า
 
-    # ✅ เพิ่มสินค้า
-    if request.method == 'POST' and 'add_product' in request.POST:
-        form = ProductForm(request.POST, request.FILES)
-        if form.is_valid():
-            new_product = form.save(commit=False)
-            new_product.shop = shop  # เชื่อมโยงสินค้าเข้ากับร้านนี้
-            new_product.save()
+    # ✅ ตรวจสอบว่ามีการส่งฟอร์มหรือไม่
+    if request.method == 'POST':
+        if 'add_product' in request.POST:  # ✅ เพิ่มสินค้า
+            form = ProductForm(request.POST, request.FILES)
+            if form.is_valid():
+                new_product = form.save(commit=False)
+                new_product.shop = shop
+                new_product.save()
+                return redirect('manage_products', shop_id=shop.id)
+
+        elif 'delete_product' in request.POST:  # ✅ ลบสินค้า
+            product_id = request.POST.get('product_id')
+            product = get_object_or_404(Product, id=product_id)
+            if product.shop == shop:
+                product.delete()
             return redirect('manage_products', shop_id=shop.id)
 
-    # ✅ ลบสินค้า (ให้เฉพาะเจ้าของร้านหรือลบสินค้าในร้านตัวเอง)
-    if request.method == 'POST' and 'delete_product' in request.POST:
-        product_id = request.POST.get('product_id')
-        product = get_object_or_404(Product, id=product_id)
-        if product.shop == shop:
-            product.delete()
-        return redirect('manage_products', shop_id=shop.id)
+        elif 'edit_product' in request.POST:  # ✅ แก้ไขสินค้า
+            product_id = request.POST.get('product_id')
+            product = get_object_or_404(Product, id=product_id)
+            form = ProductForm(request.POST, request.FILES, instance=product)
+            if form.is_valid():
+                form.save()
+                return redirect('manage_products', shop_id=shop.id)
 
-    # ✅ แก้ไขสินค้า
-    if request.method == 'POST' and 'edit_product' in request.POST:
-        product_id = request.POST.get('product_id')
-        product = get_object_or_404(Product, id=product_id)
-        form = ProductForm(request.POST, request.FILES, instance=product)
-        if form.is_valid():
-            form.save()
-            return redirect('manage_products', shop_id=shop.id)
-
-    form = ProductForm()  # สำหรับเพิ่มสินค้าใหม่
+    # ✅ สร้าง context เสมอ
     context = {
         'shop': shop,
         'products': products,
-        'form': form,
+        'product_forms': product_forms,
+        'form': ProductForm(),  # สำหรับเพิ่มสินค้าใหม่
     }
 
     return render(request, 'manage_products.html', context)
-
-
-
-
-

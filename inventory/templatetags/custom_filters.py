@@ -10,3 +10,9 @@ def multiply(value, arg):
         return float(value) * float(arg)
     except (ValueError, TypeError):
         return 0
+
+
+@register.filter
+def get_item(dictionary, key):
+    """ ใช้ดึงค่าจาก Dictionary ตาม key """
+    return dictionary.get(key, None)
