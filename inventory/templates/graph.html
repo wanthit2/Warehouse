@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <title>กราฟคำสั่งซื้อ</title>
+    <title>แดชบอร์ดสินค้า</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'styles.css' %}">
     <script src="{% static 'script.js' %}"></script>
@@ -13,7 +13,7 @@
     <div class="container">
         <!-- Sidebar -->
         <aside class="sidebar">
-            <a href="{% url 'my_view' %}" class="item-card"><i class="bi bi-bar-chart-line"></i> รายการ</a>
+            <<a href="{% url 'my_view' %}" class="item-card"><i class="bi bi-bar-chart-line"></i> รายการ</a>
             <a href="{% url 'order_view' %}" class="item-card"><i class="bi bi-clipboard-data"></i> คำสั่งซื้อ</a>
             <a href="{% url 'graph_view' %}" class="item-card"><i class="bi bi-pie-chart"></i> กราฟ</a>
             <a href="{% url 'products' %}" class="item-card"><i class="bi bi-box-seam"></i> สินค้า</a>
@@ -23,18 +23,29 @@
 
         <!-- Main Content -->
         <main class="content">
-            <h1>กราฟคำสั่งซื้อ</h1>
+            <h1>แดชบอร์ดสินค้า</h1>
 
-            <!-- กราฟที่แสดงผล -->
+            <div class="dashboard-info">
+                <p>📦 สินค้าทั้งหมด: {{ total_products }}</p>
+                <p>📁 หมวดหมู่ทั้งหมด: {{ total_categories }}</p>
+                <p>🚚 ซัพพลายเออร์ทั้งหมด: {{ total_suppliers }}</p>
+                <p>🛒 คำสั่งซื้อทั้งหมด: {{ total_orders }}</p>
+                <p>💰 รายได้ทั้งหมด: ฿{{ total_revenue }}</p>
+            </div>
+
+            <h2>📈 กราฟจำนวนคำสั่งซื้อรายเดือน</h2>
             <div class="graph-container">
-                <img src="data:image/png;base64,{{ graph }}" alt="กราฟคำสั่งซื้อ" class="graph-image">
+                <img src="data:image/png;base64,{{ order_graph }}" alt="กราฟจำนวนคำสั่งซื้อ" class="graph-image">
             </div>
 
-            <!-- ปุ่มกลับ -->
-            <div style="margin-top: 20px;">
-                <a href="{% url 'my_view' %}" class="btn">กลับไปหน้ารายการ</a>
+            <h2>💰 กราฟรายได้จากการขายรายเดือน</h2>
+            <div class="graph-container">
+                <img src="data:image/png;base64,{{ revenue_graph }}" alt="กราฟรายได้จากการขาย" class="graph-image">
             </div>
+
         </main>
+
     </div>
 </body>
 </html>
+

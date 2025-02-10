@@ -1,3 +1,4 @@
+
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
 
@@ -24,7 +25,15 @@ from .forms import ShopOwnerRequestForm
 from .forms import CustomUserProfileForm
 from django.http import HttpResponseForbidden, HttpResponseNotFound, JsonResponse, HttpResponse
 from inventory.models import Shop
-from .models import Product, Category
+from .models import Product, Category, Supplier
+import urllib, base64
+import matplotlib.pyplot as plt
+import io
+from django.db.models import Sum, Count, F
+import calendar
+
+
+
 
 def home1(request):
     return render(request, 'home.html')
@@ -32,8 +41,74 @@ def home1(request):
 def home(request):
     return render(request, 'homepage.html')
 
+@login_required
 def graph_view(request):
-    return render(request, 'graph.html')
+    # 🔹 ดึงร้านค้าที่ผู้ใช้เป็นเจ้าของหรือแอดมิน
+    store = Store.objects.filter(owner=request.user).first()
+
+    if not store:
+        return render(request, 'graph.html', {'error_message': "คุณไม่มีร้านค้า"})
+
+    # 🔹 คำนวณสถิติเฉพาะร้านนี้
+    total_products = Product.objects.filter(store=store).count()
+    total_categories = Category.objects.filter(product__store=store).distinct().count()
+    total_suppliers = Supplier.objects.count()  # ถ้าซัพพลายเออร์เชื่อมกับร้าน ต้องแก้ query
+    total_orders = Order.objects.filter(store=store).count()
+    total_revenue = Order.objects.filter(store=store).aggregate(total=Sum(F('price') * F('quantity')))['total'] or 0
+
+    # 🔹 ดึงข้อมูลคำสั่งซื้อรายเดือน (เฉพาะร้านนี้)
+    orders_by_month = (
+        Order.objects.filter(store=store)
+        .values_list('created_at__month')
+        .annotate(
+            total_orders=Count('order_id'),
+            total_revenue=Sum(F('price') * F('quantity'))
+        )
+    )
+
+    # 🔹 แปลงข้อมูลให้ใช้ในกราฟ
+    months = [calendar.month_abbr[month[0]] for month in orders_by_month]
+    order_counts = [month[1] for month in orders_by_month]
+    revenues = [month[2] or 0 for month in orders_by_month]
+
+    # 🔹 สร้างกราฟคำสั่งซื้อรายเดือน
+    plt.figure(figsize=(8, 4))
+    plt.plot(months, order_counts, marker='o', linestyle='-', color='b', label='คำสั่งซื้อ')
+    plt.xlabel('เดือน')
+    plt.ylabel('จำนวนคำสั่งซื้อ')
+    plt.title(f'จำนวนคำสั่งซื้อรายเดือนของร้าน {store.name}')
+    plt.legend()
+    buffer = io.BytesIO()
+    plt.savefig(buffer, format='png')
+    buffer.seek(0)
+    order_graph = base64.b64encode(buffer.getvalue()).decode()
+    buffer.close()
+
+    # 🔹 สร้างกราฟรายได้รายเดือน
+    plt.figure(figsize=(8, 4))
+    plt.bar(months, revenues, color='green')
+    plt.xlabel('เดือน')
+    plt.ylabel('รายได้ (บาท)')
+    plt.title(f'รายได้จากการขายรายเดือนของร้าน {store.name}')
+    buffer = io.BytesIO()
+    plt.savefig(buffer, format='png')
+    buffer.seek(0)
+    revenue_graph = base64.b64encode(buffer.getvalue()).decode()
+    buffer.close()
+
+    context = {
+        'total_products': total_products,
+        'total_categories': total_categories,
+        'total_suppliers': total_suppliers,
+        'total_orders': total_orders,
+        'total_revenue': total_revenue,
+        'order_graph': order_graph,
+        'revenue_graph': revenue_graph,
+        'store_name': store.name,
+    }
+    return render(request, 'graph.html', context)
+
+
 
 def create_user(request):
     if request.method == 'POST':
@@ -46,6 +121,10 @@ def create_user(request):
         except Exception as e:
             messages.error(request, f"Error: {str(e)}")
     return render(request, 'list.html')
+
+
+
+
 
 def category_view(request):
     categories = ['หมวดหมู่ที่ 1', 'หมวดหมู่ที่ 2', 'หมวดหมู่ที่ 3', 'หมวดหมู่ที่ 4']
@@ -490,18 +569,20 @@ def edit_profile(request):
 
 @login_required
 def profile_view(request):
-    # ใช้ filter() แทน get() เพื่อดึงหลายรายการและใช้ first() เพื่อดึงแค่ตัวแรก
-    user_profile = UserProfile.objects.filter(user=request.user).first()  # ใช้ first() เพื่อลดปัญหาหลายรายการ
+    user_profile, created = UserProfile.objects.get_or_create(user=request.user)
 
     if request.method == 'POST':
         form = UserProfileForm(request.POST, request.FILES, instance=user_profile)
         if form.is_valid():
-            form.save()  # Save profile with the new image if available
-            return redirect('profile')  # Redirect to the profile page
+            form.save()
+            messages.success(request, "อัปเดตโปรไฟล์เรียบร้อยแล้ว!")
+            return redirect('profile')
+
     else:
         form = UserProfileForm(instance=user_profile)
 
-    return render(request, 'profile.html', {'form': form, 'user_profile': user_profile})
+    return render(request, 'profile.html', {'form': form, 'profile': user_profile})
+
 
 
 

@@ -65,15 +65,9 @@ class CustomUser(AbstractUser):
 
 
 
-# โมเดล Store
-
-
-
 
 
 from django.contrib.auth import get_user_model
-
-
 
 class Shop(models.Model):
     name = models.CharField(max_length=255)
@@ -90,6 +84,9 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
+
+
 
 # โมเดล Product
 class Product(models.Model):
@@ -129,6 +126,10 @@ class Product(models.Model):
         return self.store.name if self.store else self.shop.name
   # ใช้ store ถ้ามี มิฉะนั้นใช้ shop
 
+
+
+
+
 class Stock(models.Model):
     store = models.ForeignKey(Store, on_delete=models.CASCADE, verbose_name='ร้านค้า', null=True)
     product_name = models.CharField(max_length=100, verbose_name='ชื่อสินค้า')
@@ -143,6 +144,8 @@ class Stock(models.Model):
 
     def __str__(self):
         return self.product_name
+
+
 
 
 # สร้างรหัสสินค้าอัตโนมัติ
@@ -170,6 +173,8 @@ class Order(models.Model):
     store = models.ForeignKey('Store', on_delete=models.CASCADE, verbose_name='ร้านค้า', null=True, blank=True)
     items = models.ManyToManyField('Product', related_name='orders', blank=True)
     shop = models.ForeignKey('Shop', on_delete=models.CASCADE, verbose_name='ร้านค้า', null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
 
     @property
     def total_price(self):
@@ -248,3 +253,10 @@ class ShopOwnerRequest(models.Model):
     def __str__(self):
         return self.store_name
 
+
+class Supplier(models.Model):
+    name = models.CharField(max_length=255)
+    contact_info = models.TextField()
+
+    def __str__(self):
+        return self.name
