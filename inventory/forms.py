@@ -3,7 +3,6 @@ from .models import Order
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.forms import UserCreationForm
 from .models import Product
-from .models import Profile
 from .models import UserProfile
 from .models import Stock
 from .models import CustomUser
@@ -104,15 +103,13 @@ class UserForm(forms.ModelForm):
         model = CustomUser  # ใช้ CustomUser แทน User
         fields = ['first_name', 'last_name', 'email']
 
-class ProfileForm(forms.ModelForm):
-    class Meta:
-        model = Profile
-        fields = ['phone_number', 'address', 'profile_picture']
 
 class UserProfileForm(forms.ModelForm):
     class Meta:
         model = UserProfile
-        fields = ['phone_number', 'profile_picture']
+        fields = ['phone_number', 'address', 'profile_picture']
+
+
 
 
 class StockForm(forms.ModelForm):

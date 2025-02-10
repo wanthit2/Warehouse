@@ -76,51 +76,49 @@
             <th>ร้านค้า</th>
             <th>จัดการสถานะ</th>
             {% if request.user.is_superuser %}
-            <th>ลบคำสั่งซื้อ</th>
+                <th>ลบคำสั่งซื้อ</th>
             {% endif %}
         </tr>
     </thead>
     <tbody>
         {% for order in orders %}
             {% if request.user.is_superuser or order.shop.owner == request.user or request.user in order.shop.admins.all %}
-            <tr>
-                <td>{{ order.order_id }}</td>
-                <td>{{ order.product_name }}</td>
-                <td>{{ order.price|floatformat:2 }}</td>
-                <td>{{ order.quantity }}</td>
-                <td>{{ order.total_price|floatformat:2 }}</td>
-                <td>{{ order.status }}</td>
-                <td>
-                    {% if order.store %}
-                        {{ order.store.name }}
-                    {% elif order.shop %}
-                        {{ order.shop.name }}
-                    {% else %}
-                        ไม่มีร้าน
-                    {% endif %}
-                </td>
-
-                <td>
-                    {% if order.id %}
-                        <a href="{% url 'update_order_status' order.id %}" title="แก้ไขสถานะคำสั่งซื้อ {{ order.product_name }}">🔄 แก้ไขสถานะ</a>
-                    {% else %}
-                        <span>ไม่สามารถแก้ไขสถานะได้</span>
-                    {% endif %}
-                </td>
-
-                {% if request.user.is_superuser %}
-                <td>
-                    {% if order.id %}
-                        <form method="POST" action="{% url 'admin_delete_order' order.id %}" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบคำสั่งซื้อนี้?');">
+                <tr>
+                    <td>{{ order.order_id }}</td>
+                    <td>{{ order.product_name }}</td>
+                    <td>{{ order.price|floatformat:2 }}</td>
+                    <td>{{ order.quantity }}</td>
+                    <td>{{ order.total_price|floatformat:2 }}</td>
+                    <td>{{ order.status }}</td>
+                    <td>
+                        {% if order.store %}
+                            {{ order.store.name }}
+                        {% elif order.shop %}
+                            {{ order.shop.name }}
+                        {% else %}
+                            ไม่มีร้าน
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form method="POST" action="{% url 'update_order_status' order.order_id %}">
                             {% csrf_token %}
-                            <button type="submit" class="delete-button">🗑️ ลบ</button>
+                            <select name="status">
+                                <option value="pending" {% if order.status == "pending" %}selected{% endif %}>รอจัดส่ง</option>
+                                <option value="shipped" {% if order.status == "shipped" %}selected{% endif %}>จัดส่งแล้ว</option>
+                                <option value="cancelled" {% if order.status == "cancelled" %}selected{% endif %}>ยกเลิก</option>
+                            </select>
+                            <button type="submit">✅ บันทึก</button>
                         </form>
-                    {% else %}
-                        <span>ไม่สามารถลบคำสั่งซื้อได้</span>
+                    </td>
+                    {% if request.user.is_superuser %}
+                        <td>
+                            <form method="POST" action="{% url 'admin_delete_order' order.order_id %}" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบคำสั่งซื้อนี้?');">
+                                {% csrf_token %}
+                                <button type="submit" class="delete-button">🗑️ ลบ</button>
+                            </form>
+                        </td>
                     {% endif %}
-                </td>
-                {% endif %}
-            </tr>
+                </tr>
             {% endif %}
         {% empty %}
         <tr>
@@ -131,8 +129,11 @@
         {% endfor %}
     </tbody>
 </table>
+
 <div class="container mt-5">
-        <a href="{% url 'admin_homeshop' %}" class="btn btn-outline-secondary">🔙 กลับไปหน้าadmin</a>
-    </div>
+    <a href="{% url 'admin_homeshop' %}" class="btn btn-outline-secondary">🔙 กลับไปหน้า Admin</a>
+</div>
+
 </body>
 </html>
+

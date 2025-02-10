@@ -13,8 +13,8 @@ from django.contrib.auth.decorators import login_required
 from .forms import ProductForm
 from .models import Product, Order
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Profile
-from .forms import UserForm, ProfileForm
+from .forms import UserForm, UserProfileForm  # ✅ ใช้ UserProfileForm แทน ProfileForm
+
 from .models import UserProfile
 from .models import Store, Stock
 from .forms import StockForm
@@ -510,15 +510,24 @@ def admin_order_list(request):
 
 @login_required
 def update_order_status(request, order_id):
-    order = get_object_or_404(Order, pk=order_id)
-    # ที่นี่สามารถแก้ไขสถานะคำสั่งซื้อได้
+    order = get_object_or_404(Order, order_id=order_id)
+
+    # ตรวจสอบว่าสามารถเปลี่ยนสถานะได้
+    if not (request.user.is_superuser or order.shop.owner == request.user or request.user in order.shop.admins.all()):
+        return HttpResponseForbidden("คุณไม่มีสิทธิ์แก้ไขสถานะคำสั่งซื้อนี้")
+
     if request.method == 'POST':
         new_status = request.POST.get('status')
-        order.status = new_status
-        order.save()
-        return redirect('admin_order_list')  # เปลี่ยนเส้นทางไปยังหน้าแสดงรายการคำสั่งซื้อ
+        if new_status in ['pending', 'shipped', 'cancelled']:  # ป้องกันค่าที่ไม่ถูกต้อง
+            order.status = new_status
+            order.save()
+            messages.success(request, f'อัปเดตสถานะของ Order {order.order_id} เป็น {new_status} แล้ว')
+        else:
+            messages.error(request, 'สถานะไม่ถูกต้อง')
 
-    return render(request, 'update_order_status.html', {'order': order})
+    return redirect('admin_order_list')
+
+
 
 @login_required
 def admin_delete_order(request, order_id):
