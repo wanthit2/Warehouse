@@ -626,7 +626,7 @@ def admin_login(request):
 
 @login_required
 def admin_order_list(request):
-    orders = Order.objects.prefetch_related('items').all()
+    orders = Order.objects.select_related('store', 'shop').all()
     products = Product.objects.all()
 
     return render(request, 'admin_order_list.html', {'orders': orders, 'products': products})
