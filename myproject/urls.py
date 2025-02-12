@@ -22,6 +22,7 @@ from inventory import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('chat/', include('chat.urls')),  # เชื่อม URLs ของ chat
     path('', include('inventory.urls')),
 ]
 

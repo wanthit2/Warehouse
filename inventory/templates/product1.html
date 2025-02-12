@@ -1,46 +1,48 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <title>สินค้า</title>
-  {% load static %}
-  <link rel="stylesheet" href="{% static 'product1.css' %}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <title>สินค้า</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'product1.css' %}">
 </head>
 <body>
 <div class="container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
+    <!-- Sidebar -->
+    <aside class="sidebar">
 
-            <a href="{% url 'my_view' %}" class="item-card"><i class="bi bi-bar-chart-line"></i> รายการ</a>
-            <a href="{% url 'order_view' %}" class="item-card"><i class="bi bi-clipboard-data"></i> คำสั่งซื้อ</a>
-            <a href="{% url 'graph_view' %}" class="item-card"><i class="bi bi-pie-chart"></i> กราฟ</a>
-            <a href="{% url 'products' %}" class="item-card"><i class="bi bi-box-seam"></i> สินค้า</a>
-            <a href="{% url 'stock_view' %}" class="item-card"><i class="bi bi-box-seam"></i> สต๊อก</a>
-            <a href="{% url 'home1' %}" class="home-icon"><i class="bi bi-house"></i></a>
-        </aside>
+        <a href="{% url 'my_view' %}" class="item-card"><i class="bi bi-bar-chart-line"></i> รายการ</a>
+        <a href="{% url 'order_view' %}" class="item-card"><i class="bi bi-clipboard-data"></i> คำสั่งซื้อ</a>
+        <a href="{% url 'graph_view' %}" class="item-card"><i class="bi bi-pie-chart"></i> กราฟ</a>
+        <a href="{% url 'products' %}" class="item-card"><i class="bi bi-box-seam"></i> สินค้า</a>
+        <a href="{% url 'stock_view' %}" class="item-card"><i class="bi bi-box-seam"></i> สต๊อก</a>
+        <a href="{% url 'home1' %}" class="home-icon"><i class="bi bi-house"></i></a>
+    </aside>
     <main class="main-content">
-      <header>
-        <h1>สินค้า</h1>
-      </header>
-      <div class="product-grid">
-        {% for product in products %}
-        <div class="product-card">
-          <img src="{% if product.image %}{{ product.image.url }}{% else %}{% static 'default_image.jpg' %}{% endif %}" alt="{{ product.product_name }}" class="product-image">
-          <p>{{ product.product_name }}</p>
-            <p>จำนวน: {{ product.quantity }}</p>
-          <p>ราคา: {{ product.price|floatformat:2 }} บาท</p>
-          <a href="{% url 'order_create' product.id %}">
-          <button>สั่งซื้อ</button>
-          </a>
-
+        <header>
+            <h1>สินค้า</h1>
+        </header>
+        <div class="product-grid">
+            {% for product in products %}
+            <div class="product-card">
+                <img src="{% if product.image %}{{ product.image.url }}{% else %}{% static 'default_image.jpg' %}{% endif %}"
+                     alt="{{ product.product_name }}" class="product-image">
+                <p><strong>ชื่อสินค้า:</strong> {{ product.product_name }}</p>
+                <p><strong>ร้านค้า:</strong> {{ product.shop.name }}</p>  <!-- ✅ เพิ่มชื่อร้าน -->
+                <p><strong>จำนวน:</strong> {{ product.quantity }}</p>
+                <p><strong>ราคา:</strong> {{ product.price|floatformat:2 }} บาท</p>
+                <a href="{% url 'order_create' product.id %}">
+                    <button>สั่งซื้อ</button>
+                </a>
+            </div>
+            {% empty %}
+            <p>ยังไม่มีสินค้าในระบบ</p>
+            {% endfor %}
         </div>
-        {% empty %}
-        <p>ยังไม่มีสินค้าในระบบ</p>
-        {% endfor %}
-      </div>
+
     </main>
-  </div>
+</div>
 </body>
 </html>

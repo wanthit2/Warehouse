@@ -5,6 +5,7 @@ from django.contrib.auth.models import AbstractUser
 from django.conf import settings
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
+from django.apps import apps
 
 
 ### 🔹 โมเดลผู้ใช้ (Custom User)
@@ -135,6 +136,7 @@ class Stock(models.Model):
 ### 🔹 โมเดลคำสั่งซื้อ (Order)
 class Order(models.Model):
     order_id = models.AutoField(primary_key=True)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True, blank=True)  # ✅ เพิ่ม FK ไปยัง Product
     product_name = models.CharField(max_length=255, verbose_name='ชื่อสินค้า', null=True, blank=True)
     product_code = models.CharField(max_length=255, verbose_name='รหัสสินค้า', null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='ราคา')

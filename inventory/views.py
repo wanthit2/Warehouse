@@ -168,12 +168,15 @@ def my_view(request):
 @login_required
 def order_view(request):
     query = request.GET.get('q', '')  # รับค่าค้นหาจาก GET
-    orders = Order.objects.filter(user=request.user)  # ดึงคำสั่งซื้อของผู้ใช้ที่ล็อกอิน
+
+    # ✅ ดึงข้อมูล Order พร้อมกับข้อมูลร้านค้า (shop)
+    orders = Order.objects.select_related('shop').filter(user=request.user)
 
     if query:
-        orders = orders.filter(product_name__icontains=query)  # ค้นหาคำสั่งซื้อที่มีชื่อสินค้าตรงกับคำค้นหา
+        orders = orders.filter(product_name__icontains=query)  # ✅ ค้นหาสินค้าตามคำค้นหา
 
     return render(request, 'order1.html', {'orders': orders, 'query': query})
+
 
 def product_detail_view(request, id):
     product = get_object_or_404(Product, id=id)
@@ -371,7 +374,7 @@ def add_product(request):
 
 
 def products(request):
-    products = Product.objects.all()  # ดึงข้อมูลสินค้าทั้งหมด
+    products = Product.objects.select_related('shop').all()  # ✅ ดึงสินค้าพร้อมร้านค้า
     return render(request, 'product1.html', {'products': products})
 
 def add_product(request):
@@ -393,7 +396,6 @@ def product_view(request, product_id):
         product = None
     return render(request, 'product_detail.html', {'product': product})
 
-
 @login_required
 def order_create(request, product_id):
     product = get_object_or_404(Product, id=product_id)
@@ -401,67 +403,64 @@ def order_create(request, product_id):
     if request.method == 'POST':
         quantity = int(request.POST.get('quantity', 1))
 
-        # ตรวจสอบจำนวนสินค้า
         if quantity > product.quantity or quantity <= 0:
             return render(request, 'order_create.html', {
                 'product': product,
                 'error_message': 'จำนวนสินค้าที่ต้องการสั่งซื้อไม่ถูกต้อง',
             })
 
-        # เก็บจำนวนสินค้าใน session
-        request.session['quantity'] = quantity
+        # ลดสต๊อกสินค้า
+        product.quantity -= quantity
+        product.save()
 
-        # Redirect ไปยังหน้าการยืนยัน
-        return redirect('order_confirmation', product_id=product.id)
+        # ✅ สร้างคำสั่งซื้อ พร้อมบันทึก `product`
+        Order.objects.create(
+            product=product,  # ✅ เพิ่มการบันทึก product
+            product_name=product.product_name,
+            price=product.price,
+            quantity=quantity,
+            status='pending',
+            image=product.image,
+            user=request.user,
+            shop=product.shop,
+        )
 
-    return render(request, 'order_create.html', {
-        'product': product,
-    })
+        return redirect('order_success')
+
+    return render(request, 'order_create.html', {'product': product})
+
+
 
 @login_required
 def order_confirmation(request, product_id):
     product = get_object_or_404(Product, id=product_id)
 
     if request.method == 'POST':
-        # Get quantity from session or pass directly in POST request
         quantity = request.session.get('quantity', 1)
 
-        # ตรวจสอบจำนวนสินค้า
-        if quantity > product.quantity:
-            return render(request, 'order_confirmation.html', {
-                'product': product,
-                'quantity': quantity,
-                'total_price': product.price * quantity,
-                'error_message': 'จำนวนสินค้ามากกว่าที่มีในสต็อก',
-            })
+        # ✅ ตรวจสอบว่ามีร้านค้าหรือไม่
+        shop = product.shop if hasattr(product, 'shop') else None
 
-        # ลดจำนวนสินค้าคงเหลือในสต็อก
-        product.quantity -= quantity
-        product.save()
-
-        # สร้างคำสั่งซื้อใหม่ และเชื่อมโยงกับผู้ใช้ที่ล็อกอินอยู่
+        # ✅ บันทึกคำสั่งซื้อพร้อมร้านค้า
         Order.objects.create(
             product_name=product.product_name,
             price=product.price,
             quantity=quantity,
-            status='pending',  # คำสั่งซื้อที่ยังไม่เสร็จสมบูรณ์
+            status='pending',
             image=product.image,
-            user=request.user,  # เชื่อมโยงกับผู้ใช้งานที่ล็อกอินอยู่
-            shop=product.shop,  # ดึงร้านค้าจากสินค้า
-            store=product.store,  # ดึง store จากสินค้า
+            user=request.user,
+            shop=shop,  # ✅ กำหนดร้านค้าให้ถูกต้อง
+            store=product.store if hasattr(product, 'store') else None,  # ✅ ดึง store ถ้ามี
         )
 
-        # Redirect ไปยังหน้าคำสั่งซื้อสำเร็จ
         return redirect('order_success')
 
-    # สำหรับ GET request ให้แสดงหน้า order_confirmation.html
     quantity = request.session.get('quantity', 1)
     return render(request, 'order_confirmation.html', {
         'product': product,
         'quantity': quantity,
         'total_price': product.price * quantity,
     })
-
 
 
 
@@ -1160,44 +1159,42 @@ def manage_shop_admins(request, shop_id):
 def manage_products(request, shop_id):
     shop = get_object_or_404(Shop, id=shop_id)
 
-    # เช็คสิทธิ์การเข้าถึง
+    # ✅ ตรวจสอบสิทธิ์: เจ้าของร้าน หรือ Admin ของร้านเท่านั้นที่เข้าได้
     if request.user != shop.owner and request.user not in shop.admins.all():
         return redirect('home')
 
     products = shop.products.all()
-    product_forms = [(product, ProductForm(instance=product)) for product in products]  # ✅ สร้างฟอร์มสำหรับแต่ละสินค้า
+    product_forms = {product.id: ProductForm(instance=product) for product in products}  # ✅ ใช้ Dictionary แทน List
 
-    # ✅ ตรวจสอบว่ามีการส่งฟอร์มหรือไม่
     if request.method == 'POST':
-        if 'add_product' in request.POST:  # ✅ เพิ่มสินค้า
+        action = request.POST.get('action')  # ✅ อ่านค่าการกระทำจาก `name="action"`
+
+        if action == 'add_product':  # ✅ เพิ่มสินค้า
             form = ProductForm(request.POST, request.FILES)
             if form.is_valid():
                 new_product = form.save(commit=False)
-                new_product.shop = shop
+                new_product.shop = shop  # ✅ กำหนดให้สินค้านี้อยู่ในร้านนี้
                 new_product.save()
                 return redirect('manage_products', shop_id=shop.id)
 
-        elif 'delete_product' in request.POST:  # ✅ ลบสินค้า
+        elif action == 'delete_product':  # ✅ ลบสินค้า
             product_id = request.POST.get('product_id')
-            product = get_object_or_404(Product, id=product_id)
-            if product.shop == shop:
-                product.delete()
+            product = get_object_or_404(Product, id=product_id, shop=shop)  # ✅ ตรวจสอบว่าอยู่ในร้านนี้
+            product.delete()
             return redirect('manage_products', shop_id=shop.id)
 
-        elif 'edit_product' in request.POST:  # ✅ แก้ไขสินค้า
+        elif action == 'edit_product':  # ✅ แก้ไขสินค้า
             product_id = request.POST.get('product_id')
-            product = get_object_or_404(Product, id=product_id)
+            product = get_object_or_404(Product, id=product_id, shop=shop)  # ✅ ตรวจสอบว่าอยู่ในร้านนี้
             form = ProductForm(request.POST, request.FILES, instance=product)
             if form.is_valid():
                 form.save()
-                return redirect('manage_products', shop_id=shop.id)
+            return redirect('manage_products', shop_id=shop.id)
 
-    # ✅ สร้าง context เสมอ
-    context = {
+    return render(request, 'manage_products.html', {
         'shop': shop,
         'products': products,
         'product_forms': product_forms,
-        'form': ProductForm(),  # สำหรับเพิ่มสินค้าใหม่
-    }
+        'form': ProductForm(),  # ✅ ฟอร์มสำหรับเพิ่มสินค้าใหม่
+    })
 
-    return render(request, 'manage_products.html', context)

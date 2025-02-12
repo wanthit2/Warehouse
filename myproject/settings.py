@@ -39,8 +39,11 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne", # ต้องใช้ Daphne เป็น ASGI server
+    "channels",
     'myproject',
     "inventory",
+    "chat",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -48,6 +51,17 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 ]
+
+# ✅ ตั้งค่า ASGI
+ASGI_APPLICATION = "myproject.asgi.application"
+
+# ✅ ตั้งค่า WebSocket Channels (ใช้ Redis)
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",  # ใช้ Redis ได้
+    },
+}
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -68,6 +82,7 @@ TEMPLATES = [
         'DIRS': [
             BASE_DIR / 'templates',
             BASE_DIR / 'templates_admin',
+            BASE_DIR / 'chat/templates',  # ✅ เพิ่ม chat/templates เข้าไป
         ],
         "APP_DIRS": True,
         "OPTIONS": {
@@ -80,6 +95,7 @@ TEMPLATES = [
         },
     },
 ]
+
 
 WSGI_APPLICATION = "myproject.wsgi.application"
 

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📋 รายการแจ้งปัญหาสินค้า</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { width: 80%; margin: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: center; }
+        th { background-color: #f4f4f4; }
+        .status-open { color: red; font-weight: bold; }
+        .status-in_progress { color: orange; font-weight: bold; }
+        .status-closed { color: green; font-weight: bold; }
+        .back-button { display: block; margin-top: 20px; text-align: center; }
+        .back-button a { text-decoration: none; padding: 10px 20px; background-color: #007bff; color: white; border-radius: 5px; }
+        .back-button a:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>📋 รายการแจ้งปัญหาของร้าน {% if shop %}{{ shop.name }}{% else %}ที่คุณดูแล{% endif %}</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>ลูกค้า</th>
+                    <th>วันที่แจ้ง</th>
+                    <th>สถานะ</th>
+                    <th>ดำเนินการ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for chat in chat_sessions %}
+                <tr>
+                    <td>{{ chat.id }}</td>
+                    <td>{{ chat.customer.username }}</td>
+                    <td>{{ chat.created_at|date:"Y-m-d H:i" }}</td>
+                    <td class="status-{{ chat.status }}">{{ chat.get_status_display }}</td>
+                    <td>
+                        <a href="{% url 'admin_chat' chat.id %}">👀 ดูรายละเอียด</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">❌ ยังไม่มีการแจ้งปัญหาสำหรับร้านนี้</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="back-button">
+            {% if request.user.is_superuser %}
+            <a href="{% url 'admin_home' %}">🔙 กลับไปหน้าแอดมินหลัก</a>
+            {% else %}
+            <a href="{% url 'admin_homeshop' %}">🔙 กลับไปหน้าหลักร้านค้า</a>
+            {% endif %}
+        </div>
+
+    </div>
+</body>
+</html>

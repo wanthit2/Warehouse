@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Chat</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .chat-container { width: 50%; margin: auto; border: 1px solid #ccc; padding: 10px; }
+        .messages { height: 300px; overflow-y: auto; border-bottom: 1px solid #ccc; padding: 10px; }
+        .message { margin-bottom: 10px; }
+        .message.admin { text-align: right; color: blue; }
+        .message.customer { text-align: left; color: green; }
+        .input-container { display: flex; margin-top: 10px; }
+        .input-container input { flex: 1; padding: 10px; }
+        .input-container button { padding: 10px; }
+    </style>
+</head>
+<body>
+<div class="chat-container">
+    <h3>แจ้งปัญหาสินค้า (ลูกค้า)</h3>
+    <div class="messages" id="chat-box"></div>
+    <div class="input-container">
+        <input type="text" id="message-input" placeholder="พิมพ์ข้อความ...">
+        <button onclick="sendMessage()">ส่ง</button>
+    </div>
+</div>
+
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    const sessionId = "{{ chat.id }}";
+    const username = "{{ request.user.username }}";
+    const chatBox = document.getElementById("chat-box");
+
+    const socket = new WebSocket(`ws://${window.location.host}/ws/chat/${sessionId}/`);
+
+    socket.onopen = function () {
+        console.log("✅ WebSocket connected!");
+
+        // ✅ โหลดข้อความเก่าจาก API
+        fetch(`/api/chat/messages/${sessionId}/`)
+            .then(response => response.json())
+            .then(data => loadMessages(data.messages))
+            .catch(error => console.error("❌ Error loading messages:", error));
+    };
+
+    socket.onmessage = function (event) {
+        const data = JSON.parse(event.data);
+        console.log("📩 New Message:", data);
+        addMessageToChat(data.sender, data.message);
+    };
+
+    function loadMessages(messages) {
+        chatBox.innerHTML = "";
+        messages.forEach(data => addMessageToChat(data.sender, data.message));
+    }
+
+    function addMessageToChat(sender, message) {
+        const messageDiv = document.createElement("div");
+        messageDiv.classList.add("message");
+        messageDiv.classList.add(sender === username ? "customer" : "admin");
+        messageDiv.innerText = `${sender}: ${message}`;
+        chatBox.appendChild(messageDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function sendMessage() {
+        const messageInput = document.getElementById("message-input");
+        const message = messageInput.value.trim();
+
+        if (message !== "") {
+            socket.send(JSON.stringify({
+                message: message,
+                sender: username,
+                sessionid: sessionId,
+                csrfmiddlewaretoken: getCookie('csrftoken')
+            }));
+            messageInput.value = "";
+        }
+    }
+</script>
+
+
+</body>
+</html>

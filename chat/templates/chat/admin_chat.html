@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Chat</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .chat-container { width: 50%; margin: auto; border: 1px solid #ccc; padding: 10px; }
+        .messages { height: 300px; overflow-y: auto; border-bottom: 1px solid #ccc; padding: 10px; }
+        .message { margin-bottom: 10px; }
+        .message.customer { color: green; }
+        .message.admin { color: blue; text-align: right; }
+        .input-container { display: flex; margin-top: 10px; }
+        .input-container input { flex: 1; padding: 10px; }
+        .input-container button { padding: 10px; }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <h3>📩 แชทกับลูกค้า: {{ chat.customer.username }}</h3>
+        <div class="messages" id="chat-box"></div>
+
+        <!-- เปลี่ยนสถานะแชท -->
+        <form method="POST">
+            {% csrf_token %}
+            <label>สถานะแชท:</label>
+            <select name="status">
+                <option value="open" {% if chat.status == "open" %}selected{% endif %}>รอตอบ</option>
+                <option value="in_progress" {% if chat.status == "in_progress" %}selected{% endif %}>กำลังดำเนินการ</option>
+                <option value="closed" {% if chat.status == "closed" %}selected{% endif %}>เสร็จสิ้น</option>
+            </select>
+            <button type="submit">อัปเดตสถานะ</button>
+        </form>
+
+        <!-- ส่งข้อความ -->
+        <div class="input-container">
+            <input type="text" id="message-input" placeholder="พิมพ์ข้อความ...">
+            <button onclick="sendMessage()">ส่ง</button>
+        </div>
+    </div>
+
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.startsWith(name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        const sessionId = "{{ chat.id }}"; // ดึง session ID จาก Django
+        const socket = new WebSocket(`ws://${window.location.host}/ws/chat/${sessionId}/`);
+
+        socket.onopen = function () {
+            console.log("✅ WebSocket connected!");
+        };
+
+        socket.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+            const chatBox = document.getElementById("chat-box");
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add("message");
+            messageDiv.classList.add(data.sender === "admin" ? "admin" : "customer");
+            messageDiv.innerText = `${data.sender}: ${data.message}`;
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        };
+
+        function sendMessage() {
+            const messageInput = document.getElementById("message-input");
+            const message = messageInput.value;
+            if (message.trim() !== "") {
+                socket.send(JSON.stringify({
+                    message: message,
+                    sessionid: getCookie('my_session_cookie'),
+                }));
+                messageInput.value = "";
+            }
+        }
+    </script>
+</body>
+</html>

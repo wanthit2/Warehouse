@@ -86,7 +86,7 @@ class CustomUserCreationForm(UserCreationForm):
 class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
-        fields = ['shop', 'store', 'product_name', 'product_code', 'description', 'price', 'quantity', 'image', 'stock_quantity']
+        fields = ['shop', 'store', 'product_name', 'description', 'price', 'quantity', 'image', 'stock_quantity']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 4, 'cols': 40}),
         }

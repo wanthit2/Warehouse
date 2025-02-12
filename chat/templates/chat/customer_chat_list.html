@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>รายการแจ้งปัญหาของฉัน</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .container { width: 70%; margin: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: center; }
+        th { background-color: #f4f4f4; }
+        .status-open { color: red; font-weight: bold; }
+        .status-in_progress { color: orange; font-weight: bold; }
+        .status-closed { color: green; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>📋 รายการแจ้งปัญหาของฉัน</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>วันที่แจ้ง</th>
+                    <th>สถานะ</th>
+                    <th>ดำเนินการ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for chat in chat_sessions %}
+                <tr>
+                    <td>{{ chat.id }}</td>
+                    <td>{{ chat.created_at|date:"Y-m-d H:i" }}</td>
+                    <td class="status-{{ chat.status }}">{{ chat.get_status_display }}</td>
+                    <td>
+                        <a href="{% url 'customer_chat_detail' chat.id %}">👀 ดูรายละเอียด</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">❌ คุณยังไม่มีการแจ้งปัญหา</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

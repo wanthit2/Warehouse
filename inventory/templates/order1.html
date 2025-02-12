@@ -10,83 +10,109 @@
     <link rel="stylesheet" href="{% static 'styles1.css' %}">
 </head>
 <body>
-    <div class="container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <a href="{% url 'my_view' %}" class="item-card"><i class="bi bi-bar-chart-line"></i> รายการ</a>
-            <a href="{% url 'order_view' %}" class="item-card"><i class="bi bi-clipboard-data"></i> คำสั่งซื้อ</a>
-            <a href="{% url 'graph_view' %}" class="item-card"><i class="bi bi-pie-chart"></i> กราฟ</a>
-            <a href="{% url 'products' %}" class="item-card"><i class="bi bi-box-seam"></i> สินค้า</a>
-            <a href="{% url 'stock_view' %}" class="item-card"><i class="bi bi-box-seam"></i> สต๊อก</a>
-            <a href="{% url 'home1' %}" class="home-icon"><i class="bi bi-house"></i></a>
-        </aside>
+<div class="container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <a href="{% url 'my_view' %}" class="item-card"><i class="bi bi-bar-chart-line"></i> รายการ</a>
+        <a href="{% url 'order_view' %}" class="item-card"><i class="bi bi-clipboard-data"></i> คำสั่งซื้อ</a>
+        <a href="{% url 'graph_view' %}" class="item-card"><i class="bi bi-pie-chart"></i> กราฟ</a>
+        <a href="{% url 'products' %}" class="item-card"><i class="bi bi-box-seam"></i> สินค้า</a>
+        <a href="{% url 'stock_view' %}" class="item-card"><i class="bi bi-box-seam"></i> สต๊อก</a>
+        <a href="{% url 'home1' %}" class="home-icon"><i class="bi bi-house"></i></a>
+    </aside>
 
-        <!-- Main Content -->
-        <main class="content">
-            <h1>คำสั่งซื้อ</h1>
+    <!-- Main Content -->
+    <main class="content">
+        <h1>คำสั่งซื้อ</h1>
 
-            <div class="search-bar">
-                <form method="GET" action="{% url 'order_view' %}" class="search-bar">
-                     <input type="text" name="q" value="{{ request.GET.q }}" placeholder="ค้นหาคำสั่งซื้อ...">
-                     <button type="submit" class="btn btn-primary">ค้นหา</button>
-                </form>
-            </div>
+        <div class="search-bar">
+            <form method="GET" action="{% url 'order_view' %}" class="search-bar">
+                <input type="text" name="q" value="{{ request.GET.q }}" placeholder="ค้นหาคำสั่งซื้อ...">
+                <button type="submit" class="btn btn-primary">ค้นหา</button>
+            </form>
+        </div>
 
-            <div style="display: flex; justify-content: flex-end;">
-                <a href="{% url 'products' %}" class="btn">เพิ่มคำสั่งซื้อ</a>
-            </div>
+        <div style="display: flex; justify-content: flex-end;">
+            <a href="{% url 'customer_chat_list' %}" class="btn btn-warning">🛠️ แจ้งปัญหาของฉัน</a>
 
-           <table class="table">
-                <thead>
-                    <tr>
-                        <th>ลำดับ</th>
-                        <th>รูป</th>
-                        <th>ชื่อสินค้า</th>
-                        <th>ราคา</th>
-                        <th>จำนวน</th>
-                        <th>ราคารวม (บาท)</th>
-                        <th>สถานะ</th>
-                        <th>จัดการ</th> <!-- ปุ่มจัดการคำสั่งซื้อ -->
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if orders %}
-                        {% for order in orders %}
-                            <tr class="td">
-                                <td>{{ forloop.counter }}</td> <!-- แสดงลำดับ -->
-                                <td>
-                                    {% if order.image and order.image.url %}
-                                        <img src="{{ order.image.url }}" alt="Product Image" style="width: 80px; height: 80px;">
-                                    {% else %}
-                                        <img src="{% static 'images/default-product.jpg' %}" alt="No Image Available" style="width: 80px; height: 80px;">
-                                    {% endif %}
-                                </td>
-                                <td>{{ order.product_name }}</td>
-                                <td>{{ order.price }} บาท</td>
-                                <td>{{ order.quantity }} ชิ้น</td>
-                                <td>
-                                   {{ order.price }} * {{ order.quantity }} = {{ order.price|multiply:order.quantity }}
-                                </td>
-                                <td>{{ order.status }}</td>
-                                <td>
-                                    <!-- ปุ่มยกเลิกคำสั่งซื้อ -->
-                                    {% if not order.is_cancelled %}
-                                       <a href="{% url 'cancel_order' order.order_id %}" class="btn btn-warning" onclick="return confirm('คุณแน่ใจหรือว่าต้องการยกเลิกคำสั่งซื้อนี้?');">ยกเลิก</a>
-                                    {% else %}
-                                        <span class="text-muted">คำสั่งซื้อนี้ถูกยกเลิกแล้ว</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        {% endfor %}
+            <a href="{% url 'products' %}" class="btn">เพิ่มคำสั่งซื้อ</a>
+        </div>
+
+        <table class="table">
+            <thead>
+            <tr>
+                <th>ลำดับ</th>
+                <th>รูป</th>
+                <th>ชื่อสินค้า</th>
+                <th>ร้านค้า</th> <!-- ✅ เพิ่มคอลัมน์ชื่อร้าน -->
+                <th>ราคา</th>
+                <th>จำนวน</th>
+                <th>ราคารวม (บาท)</th>
+                <th>สถานะ</th>
+                <th>จัดการ</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% if orders %}
+            {% for order in orders %}
+            <tr class="td">
+                <td>{{ forloop.counter }}</td>
+                <td>
+                    {% if order.image and order.image.url %}
+                    <img src="{{ order.image.url }}" alt="Product Image" style="width: 80px; height: 80px;">
                     {% else %}
-                        <tr>
-                            <td colspan="8" style="text-align: center;">ยังไม่มีข้อมูล</td>
-                        </tr>
+                    <img src="{% static 'images/default-product.jpg' %}" alt="No Image Available"
+                         style="width: 80px; height: 80px;">
                     {% endif %}
-                </tbody>
-            </table>
-        </main>
-    </div>
+                </td>
+                <td>{{ order.product_name }}</td>
+
+                <!-- ✅ เพิ่มการตรวจสอบค่า order.product และ order.shop -->
+                <td>
+                    {% if order.shop %}
+                    {{ order.shop.name }}
+                    {% else %}
+                    ❌ ไม่มีร้าน
+                    {% endif %}
+                </td>
+
+
+                <td>{{ order.price }} บาท</td>
+                <td>{{ order.quantity }} ชิ้น</td>
+                <td>{{ order.price|multiply:order.quantity }}</td>
+                <td>{{ order.status }}</td>
+                <td>
+                    <!-- ปุ่มยกเลิกคำสั่งซื้อ -->
+                    {% if not order.is_cancelled %}
+                    <a href="{% url 'cancel_order' order.order_id %}" class="btn btn-warning"
+                       onclick="return confirm('คุณแน่ใจหรือว่าต้องการยกเลิกคำสั่งซื้อนี้?');">ยกเลิก</a>
+                    {% else %}
+                    <span class="text-muted">คำสั่งซื้อนี้ถูกยกเลิกแล้ว</span>
+                    {% endif %}
+
+                <td>
+                    <!-- ✅ ปุ่มแจ้งปัญหา -->
+                    {% if order.product %}
+                    <a href="{% url 'customer_chat_with_product' order.product.id %}"
+                       class="btn btn-danger">แจ้งปัญหา</a>
+                    {% else %}
+                    <a href="{% url 'customer_chat' %}" class="btn btn-danger">แจ้งปัญหา</a>
+                    <!-- ✅ ไม่มี product ใช้ URL หลัก -->
+                    {% endif %}
+                </td>
+
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="9" style="text-align: center;">ยังไม่มีข้อมูล</td>
+            </tr>
+            {% endif %}
+            </tbody>
+
+        </table>
+    </main>
+</div>
 </body>
 </html>
 
