@@ -10,6 +10,8 @@ from .views import AddShopView
 def admin_required(function):
     return user_passes_test(lambda u: u.is_staff)(function)
 
+
+
 urlpatterns = [
     path('homepage/', views.home, name='homepage'),
     path('', views.home, name='home'),
@@ -122,4 +124,7 @@ urlpatterns = [
 
     # หน้ายืนยันว่าตั้งรหัสผ่านใหม่สำเร็จ
     path('reset/done/', auth_views.PasswordResetCompleteView.as_view(template_name='password_reset_complete.html'),name='password_reset_complete'),
+
+
+
 ]

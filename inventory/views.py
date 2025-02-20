@@ -16,7 +16,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .forms import UserForm, UserProfileForm  # ✅ ใช้ UserProfileForm แทน ProfileForm
 
 from .models import UserProfile
-from .models import Store, Stock
+from .models import Stock
 from .forms import StockForm
 from .forms import SearchStockForm
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -479,7 +479,6 @@ def order_confirmation(request, product_id):
             image=product.image,
             user=request.user,
             shop=shop,  # ✅ กำหนดร้านค้าให้ถูกต้อง
-            store=product.store if hasattr(product, 'store') else None,  # ✅ ดึง store ถ้ามี
         )
 
         return redirect('order_success')
@@ -490,6 +489,9 @@ def order_confirmation(request, product_id):
         'quantity': quantity,
         'total_price': product.price * quantity,
     })
+
+
+
 
 
 
@@ -517,16 +519,15 @@ def admin_order_list(request):
         # ดึงร้านที่ผู้ใช้เป็นเจ้าของหรือเป็นแอดมิน
         owned_shops = Shop.objects.filter(owner=request.user).values_list('id', flat=True)
         managed_shops = Shop.objects.filter(admins=request.user).values_list('id', flat=True)
-        owned_stores = Store.objects.filter(owner=request.user).values_list('id', flat=True)
-        managed_stores = Store.objects.filter(admins=request.user).values_list('id', flat=True)
+
 
         # รวมร้านที่ผู้ใช้เกี่ยวข้อง
         related_shop_ids = list(owned_shops) + list(managed_shops)
-        related_store_ids = list(owned_stores) + list(managed_stores)
+
 
         # กรองเฉพาะคำสั่งซื้อที่เกี่ยวข้องกับร้านของผู้ใช้
         orders = Order.objects.filter(
-            Q(shop_id__in=related_shop_ids) | Q(store_id__in=related_store_ids)
+            Q(shop_id__in=related_shop_ids)
         ).distinct()
 
     # ถ้ามีการส่ง `status` ให้กรองเฉพาะคำสั่งซื้อนั้น
@@ -670,7 +671,7 @@ def admin_login(request):
 
 @login_required
 def admin_order_list(request):
-    orders = Order.objects.select_related('store', 'shop').all()
+    orders = Order.objects.select_related('shop').all()
     products = Product.objects.all()
 
     return render(request, 'admin_order_list.html', {'orders': orders, 'products': products})
@@ -726,65 +727,19 @@ def delete_order(request, order_id):
     return redirect('admin_orders')
 
 
-# เพิ่มสินค้าในสต็อก
-def add_stock(request, store_id):
-    store = get_object_or_404(Store, id=store_id)
-    if request.method == 'POST':
-        form = StockForm(request.POST)
-        if form.is_valid():
-            stock = form.save(commit=False)
-            stock.store = store  # กำหนดร้านที่สินค้าต้องการเพิ่ม
-            stock.save()
-            return redirect('store_stock', store_id=store.id)
-    else:
-        form = StockForm()
-    return render(request, 'add_stock.html', {'form': form, 'store': store})
-
-
-
-# ลบสต็อกสินค้า
-def delete_stock(request, stock_id):
-    stock = get_object_or_404(Stock, id=stock_id)
-    store_id = stock.store.id
-    stock.delete()
-    return redirect('store_stock', store_id=store_id)
-
-
-def store_detail(request, store_id):
-    store = get_object_or_404(Store, id=store_id)
-    products = Product.objects.filter(store=store)  # กรองสินค้าของร้านนั้นๆ
-    return render(request, 'store_detail.html', {'store': store, 'products': products})
-
-
-def store_list(request):
-    stores = Store.objects.all()  # ดึงข้อมูลร้านทั้งหมด
-    return render(request, 'store_list.html', {'stores': stores})
-
-
-@login_required
-def store_list(request):
-    stores = Store.objects.all()
-    return render(request, 'store_list.html', {'stores': stores})
-
-@login_required
-def store_detail(request, store_id):
-    store = get_object_or_404(Store, id=store_id)
-    products = Product.objects.filter(store=store)
-    return render(request, 'store_detail.html', {'store': store, 'products': products})
-
-
-
-
 @login_required
 def create_stock(request):
     if request.method == 'POST':
         form = StockForm(request.POST)
         if form.is_valid():
             stock = form.save(commit=False)
-            # เชื่อมโยงสินค้ากับร้านของผู้ใช้ที่เข้าสู่ระบบ
-            stock.store = request.user.stores.first()
-            stock.save()
-            return redirect('stock_view')
+            stock.shop = request.user.owned_shops.first()
+            if stock.shop:  # ตรวจสอบว่าผู้ใช้มีร้านค้าหรือไม่
+                stock.save()
+                return redirect('stock_view')
+            else:
+                form.add_error(None, "คุณไม่มีร้านค้า กรุณาสร้างร้านค้าก่อน")
+
     else:
         form = StockForm()
 
@@ -845,20 +800,20 @@ def manage_users(request):
 def approve_user(request, user_id):
     user = get_object_or_404(CustomUser, id=user_id)
 
-    # เปลี่ยนประเภทผู้ใช้เป็นเจ้าของร้านและเปลี่ยนสถานะ
+    # ✅ เปลี่ยนประเภทผู้ใช้เป็นเจ้าของร้านและเปลี่ยนสถานะ
     user.user_type = 'shop_owner'
     user.is_shop_owner_approved = True
     user.is_shop_owner = True  # เพิ่มสถานะเป็นเจ้าของร้าน
     user.save()
 
-    # สร้างร้านใหม่ให้เจ้าของร้าน (ถ้ายังไม่มี)
-    store, created = Store.objects.get_or_create(name=f"ร้านของ {user.username}", owner=user)
+    # ✅ สร้างร้านใหม่ให้เจ้าของร้าน (ถ้ายังไม่มี)
+    shop, created = Shop.objects.get_or_create(name=f"ร้านของ {user.username}", owner=user)
 
-    # เชื่อมโยงร้านกับผู้ใช้ (ถ้ามีระบบ ManyToMany)
-    if hasattr(user, 'stores'):
-        user.stores.add(store)
+    # ✅ เชื่อมโยงร้านกับผู้ใช้ (ถ้ามีระบบ ManyToMany)
+    if hasattr(user, 'owned_shops'):  # ใช้ related_name="owned_shops" ใน Shop
+        user.owned_shops.add(shop)
 
-    # แจ้งเตือน
+    # ✅ แจ้งเตือน
     messages.success(request, f'ผู้ใช้ {user.username} ได้รับการอนุมัติให้เป็นเจ้าของร้านและร้านถูกสร้างแล้ว!')
     return redirect('manage_users')
 
@@ -1113,7 +1068,7 @@ def stock_view(request):
         products = Product.objects.all()
 
     # ถ้าเป็นเจ้าของร้านหรือแอดมินของร้าน ให้ดึงข้อมูลเฉพาะของร้านตัวเอง
-    elif request.user.shop_set.exists():  # ตรวจสอบว่าผู้ใช้เป็นเจ้าของร้านหรือไม่
+    elif request.user.owned_shops.exists():  # ตรวจสอบว่าผู้ใช้เป็นเจ้าของร้านหรือไม่
         products = Product.objects.filter(shop__owner=request.user)
 
     elif request.user.admin_shops.exists():  # ตรวจสอบว่าเป็นแอดมินของร้าน

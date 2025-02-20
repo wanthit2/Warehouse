@@ -1,14 +1,8 @@
 from django import forms
-from .models import Order
-from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth.forms import UserCreationForm
-from .models import Product
-from .models import UserProfile
-from .models import Stock
+from .models import Order, Product, UserProfile, Stock, CustomUser, ShopOwnerRequest, Shop
 from .models import CustomUser
-from .models import ShopOwnerRequest
-from .models import Shop
-from .models import Store
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import AuthenticationForm
 
 
 STATUS_CHOICES = [
@@ -23,6 +17,7 @@ SALES_CHANNEL_CHOICES = [
 ]
 
 
+### 🔹 แก้ไข `OrderForm` (ลบ `store`)
 class OrderForm(forms.ModelForm):
     class Meta:
         model = Order
@@ -40,24 +35,36 @@ class OrderForm(forms.ModelForm):
         order = super().save(commit=False)
 
         if self.product:
-            # ดึงข้อมูลจาก product
             order.product_name = self.product.product_name
             order.price = self.product.price
             order.total_price = order.price * order.quantity
 
-            # บันทึกค่า shop และ store
+            # ✅ ใช้ shop แทน store
             order.shop_id = self.product.shop.id if self.product.shop else None
-            order.store_id = self.product.store.id if self.product.store else None
-
-            # กำหนดร้านค้า (shop) และ store
             order.shop = self.product.shop
-            order.store = self.product.store
 
         if commit:
             order.save()
         return order
 
 
+### 🔹 แก้ไข `ProductForm` (ลบ `store`)
+class ProductForm(forms.ModelForm):
+    class Meta:
+        model = Product
+        fields = ['shop', 'product_name', 'description', 'price', 'quantity', 'image', 'stock_quantity']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 4, 'cols': 40}),
+        }
+
+    def save(self, commit=True):
+        product = super().save(commit=False)
+        if commit:
+            product.save()
+        return product
+
+
+### 🔹 ฟอร์มสมัครสมาชิก
 class LoginForm(AuthenticationForm):
     username = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'Username'}))
     password = forms.CharField(widget=forms.PasswordInput(attrs={'placeholder': 'Password'}))
@@ -83,27 +90,10 @@ class CustomUserCreationForm(UserCreationForm):
         return cleaned_data
 
 
-class ProductForm(forms.ModelForm):
-    class Meta:
-        model = Product
-        fields = ['shop', 'store', 'product_name', 'description', 'price', 'quantity', 'image', 'stock_quantity']
-        widgets = {
-            'description': forms.Textarea(attrs={'rows': 4, 'cols': 40}),
-        }
-
-    def save(self, commit=True):
-        product = super().save(commit=False)
-        if commit:
-            product.save()
-        return product
 
 
-class UserForm(forms.ModelForm):
-    class Meta:
-        model = CustomUser  # ใช้ CustomUser แทน User
-        fields = ['first_name', 'last_name', 'email']
 
-
+### 🔹 ฟอร์มแก้ไขโปรไฟล์
 class UserProfileForm(forms.ModelForm):
     username = forms.CharField(max_length=150, required=True, label="ชื่อผู้ใช้")
     email = forms.EmailField(required=True, label="อีเมล")
@@ -133,8 +123,7 @@ class UserProfileForm(forms.ModelForm):
         return profile
 
 
-
-
+### 🔹 ฟอร์มคลังสินค้า
 class StockForm(forms.ModelForm):
     class Meta:
         model = Stock
@@ -144,21 +133,43 @@ class StockForm(forms.ModelForm):
 class SearchStockForm(forms.Form):
     query = forms.CharField(label='ค้นหาสินค้า', max_length=100, required=False)
 
+
+
 class ShopOwnerRequestForm(forms.ModelForm):
     class Meta:
         model = ShopOwnerRequest
-        fields = ['store_name', 'description', 'email']
+        fields = ['shop_name', 'description', 'email']
         widgets = {
-            'store_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'shop_name': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'})
         }
-    # คุณสามารถเพิ่มการตรวจสอบข้อมูลในฟอร์มได้ที่นี่ถ้าจำเป็น
+
     def clean_email(self):
         email = self.cleaned_data.get('email')
         if ShopOwnerRequest.objects.filter(email=email).exists():
             raise forms.ValidationError("อีเมลนี้ถูกใช้ในการสมัครแล้ว")
         return email
+
+
+### 🔹 ฟอร์มเพิ่มแอดมินร้านค้า
+class AddAdminForm(forms.Form):
+    user = forms.ModelChoiceField(queryset=CustomUser.objects.filter(is_shop_owner_approved=True), label='เลือกผู้ใช้งานที่ต้องการเพิ่มเป็นแอดมิน')
+
+
+### 🔹 ฟอร์มร้านค้า
+class ShopForm(forms.ModelForm):
+    class Meta:
+        model = Shop
+        fields = ['name', 'location', 'owner', 'admins']
+
+
+
+class UserForm(forms.ModelForm):
+    class Meta:
+        model = CustomUser  # ใช้ CustomUser แทน User
+        fields = ['first_name', 'last_name', 'email']
+
 
 
 class CustomUserProfileForm(forms.ModelForm):
@@ -189,18 +200,3 @@ class CustomUserProfileForm(forms.ModelForm):
             raise forms.ValidationError("ชื่อผู้ใช้นี้มีผู้ใช้งานแล้ว")
 
         return username
-
-
-class AddAdminForm(forms.Form):
-    user = forms.ModelChoiceField(queryset=CustomUser.objects.filter(is_shop_owner_approved=True), label='เลือกผู้ใช้งานที่ต้องการเพิ่มเป็นแอดมิน')
-
-class ShopForm(forms.ModelForm):
-    class Meta:
-        model = Shop
-        fields = ['name', 'location', 'owner', 'admins']
-
-
-class StoreForm(forms.ModelForm):
-    class Meta:
-        model = Store
-        fields = ['name', 'description', 'owner']
