@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>แก้ไขร้านค้า</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <h2>✏ แก้ไขร้านค้า - {{ shop.name }}</h2>
+        <div class="card p-4 shadow-sm">
+            <form method="POST">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">ชื่อร้าน</label>
+                    {{ form.name }}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">เจ้าของร้าน</label>
+                    {{ form.owner }}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">วันที่สร้าง</label>
+                    {{ form.created_at }}
+                </div>
+                <button type="submit" class="btn btn-primary">💾 บันทึก</button>
+                <a href="{% url 'manage_shops' %}" class="btn btn-secondary">❌ ยกเลิก</a>
+            </form>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

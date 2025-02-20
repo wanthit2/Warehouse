@@ -13,7 +13,7 @@ body {
   padding: 20px 30px;
   border-radius: 10px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  width: 300px;
+  width: 320px;
   text-align: center;
 }
 
@@ -22,9 +22,11 @@ h2 {
   color: #333;
 }
 
+/* ✅ ปรับสไตล์ช่องกรอกข้อมูล */
 .input-group {
   margin-bottom: 15px;
   text-align: left;
+  position: relative;
 }
 
 label {
@@ -33,21 +35,37 @@ label {
   font-weight: bold;
 }
 
-input[type="text"],
-input[type="password"] {
+/* ✅ เพิ่มไอคอนอีเมล */
+.input-group input[type="email"],
+.input-group input[type="password"] {
   width: 100%;
-  padding: 10px;
+  padding: 10px 40px 10px 10px; /* เว้นช่องซ้ายเพื่อไอคอน */
   border: 1px solid #ccc;
   border-radius: 5px;
   box-sizing: border-box;
+  font-size: 16px;
+  transition: border-color 0.3s;
 }
 
-input[type="text"]:focus,
-input[type="password"]:focus {
+.input-group input[type="email"]:focus,
+.input-group input[type="password"]:focus {
   border-color: #007bff;
   outline: none;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
 }
 
+/* ✅ เพิ่มไอคอนอีเมลในช่องกรอก */
+.input-group::before {
+  content: "✉️"; /* ไอคอนอีเมล */
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: #007bff;
+}
+
+/* ✅ ปรับสไตล์ Forgot Password & Remember Me */
 .options {
   display: flex;
   justify-content: space-between;
@@ -69,21 +87,25 @@ input[type="password"]:focus {
   text-decoration: underline;
 }
 
+/* ✅ ปุ่ม Login */
 .login-btn {
   width: 100%;
-  padding: 10px 0;
+  padding: 12px 0;
   background: #007bff;
   color: #fff;
   border: none;
   border-radius: 5px;
   font-size: 16px;
   cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
 }
 
 .login-btn:hover {
   background: #0056b3;
+  transform: scale(1.05);
 }
 
+/* ✅ ลิงก์สมัครสมาชิก */
 .register {
   margin-top: 10px;
   font-size: 14px;
@@ -92,8 +114,27 @@ input[type="password"]:focus {
 .register a {
   color: #007bff;
   text-decoration: none;
+  font-weight: bold;
 }
 
 .register a:hover {
   text-decoration: underline;
+}
+
+/* ✅ ทำให้รองรับหน้าจอขนาดเล็ก */
+@media (max-width: 400px) {
+  .login-container {
+    width: 90%;
+    padding: 15px;
+  }
+
+  .input-group input {
+    font-size: 14px;
+    padding: 10px;
+  }
+
+  .login-btn {
+    font-size: 14px;
+    padding: 10px;
+  }
 }

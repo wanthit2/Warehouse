@@ -90,15 +90,14 @@
                     <span class="text-muted">คำสั่งซื้อนี้ถูกยกเลิกแล้ว</span>
                     {% endif %}
 
-                <td>
+
                     <!-- ✅ ปุ่มแจ้งปัญหา -->
-                    {% if order.product %}
-                    <a href="{% url 'customer_chat_with_product' order.product.id %}"
-                       class="btn btn-danger">แจ้งปัญหา</a>
+                    {% if order.product_id %}
+                    <a href="{% url 'customer_chat' order.product_id %}" class="btn btn-danger">แจ้งปัญหา</a>
                     {% else %}
-                    <a href="{% url 'customer_chat' %}" class="btn btn-danger">แจ้งปัญหา</a>
-                    <!-- ✅ ไม่มี product ใช้ URL หลัก -->
+                    <span class="text-muted">ไม่สามารถแจ้งปัญหาได้</span>
                     {% endif %}
+
                 </td>
 
             </tr>

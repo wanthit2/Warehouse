@@ -7,6 +7,9 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from .models import Order, Stock  # import โมเดลที่เกี่ยวข้อง
 
+
+
+
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
@@ -34,3 +37,4 @@ def update_stock(sender, instance, created, **kwargs):
                     raise ValueError(f"จำนวนสินค้าในสต๊อกไม่เพียงพอสำหรับสินค้า: {product_name}")
             except Stock.DoesNotExist:
                 raise ValueError(f"ไม่พบสินค้าในสต๊อก: {product_name}")
+

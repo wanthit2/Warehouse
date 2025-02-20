@@ -13,11 +13,6 @@
             padding: 0;
         }
 
-        h1 {
-            text-align: center;
-            color: #333;
-        }
-
         .container {
             width: 80%;
             max-width: 600px;
@@ -26,6 +21,11 @@
             background-color: #fff;
             border-radius: 8px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
         }
 
         .form-group {
@@ -39,9 +39,8 @@
             margin-bottom: 5px;
         }
 
-        .form-group input[type="text"],
-        .form-group input[type="email"],
-        .form-group input[type="file"] {
+        .form-group input,
+        .form-group textarea {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
@@ -49,10 +48,18 @@
             font-size: 16px;
             color: #333;
             margin-top: 5px;
+            resize: vertical;
         }
 
         .form-group input[type="file"] {
             border: none;
+        }
+
+        .profile-image {
+            display: block;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            border: 3px solid #ddd;
         }
 
         button {
@@ -76,6 +83,16 @@
             margin-top: 20px;
         }
 
+        .form-footer a {
+            text-decoration: none;
+            color: #007bff;
+            font-size: 16px;
+        }
+
+        .form-footer a:hover {
+            text-decoration: underline;
+        }
+
     </style>
 </head>
 <body>
@@ -85,15 +102,31 @@
         <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
 
-            <!-- ฟิลด์ที่เป็นส่วนหนึ่งของแบบฟอร์ม -->
+            <!-- แสดงรูปโปรไฟล์ -->
+            <img src="{% if user.profile.profile_picture %}{{ user.profile.profile_picture.url }}{% else %}/static/nomol-avatar.jpg{% endif %}"
+                 alt="รูปโปรไฟล์" class="profile-image" width="120" height="120">
 
             <div class="form-group">
-                <label for="profile_picture">รูปโปรไฟล์</label>
+                <label for="profile_picture">อัปโหลดรูปโปรไฟล์</label>
                 {{ form.profile_picture }}
             </div>
 
-            <!-- ปุ่มบันทึก -->
-            <button type="submit">บันทึก</button>
+            <div class="form-group">
+                <label for="username">ชื่อผู้ใช้</label>
+                {{ form.username }}
+            </div>
+
+            <div class="form-group">
+                <label for="email">อีเมล</label>
+                {{ form.email }}
+            </div>
+
+            <div class="form-group">
+                <label for="address">ที่อยู่</label>
+                {{ form.address }}
+            </div>
+
+            <button type="submit">💾 บันทึกการเปลี่ยนแปลง</button>
         </form>
 
         <div class="form-footer">

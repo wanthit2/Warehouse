@@ -25,6 +25,9 @@ def customer_chat_view(request, product_id=None):
         product = get_object_or_404(Product, id=product_id)
         shop = product.shop  # ✅ ดึงร้านค้าของสินค้านั้น
 
+    if not shop:
+        return JsonResponse({"error": "❌ ไม่สามารถเริ่มแชทได้ ไม่มีร้านค้าเชื่อมโยง"}, status=400)
+
     chat, created = ChatSession.objects.get_or_create(
         customer=request.user,
         shop=shop  # ✅ บันทึกร้านค้าไปในแชท
@@ -32,8 +35,6 @@ def customer_chat_view(request, product_id=None):
 
     messages = chat.messages.all().order_by("timestamp")  # ✅ ดึงข้อความทั้งหมด
     return render(request, "chat/customer_chat.html", {"chat": chat, "messages": messages, "product": product})
-
-
 
 
 @login_required
@@ -53,12 +54,15 @@ def admin_chat_view(request, session_id):
     messages = chat.messages.all().order_by("timestamp")
 
     if request.method == "POST":
-        chat.status = request.POST.get("status")
+        text = request.POST.get("message", "").strip()
+        if text:
+            Message.objects.create(session=chat, sender=request.user, text=text)
+
+        chat.status = request.POST.get("status", chat.status)
         chat.save()
         return redirect("admin_chat", session_id=session_id)  # ✅ รีเฟรชหน้า
 
     return render(request, "chat/admin_chat.html", {"chat": chat, "messages": messages})
-
 
 
 @login_required
@@ -115,3 +119,25 @@ def customer_chat_list_view(request):
     return render(request, "chat/customer_chat_list.html", {"chat_sessions": chat_sessions})
 
 
+@login_required
+def chat_history_api(request, session_id):
+    """ API ดึงประวัติแชทย้อนหลัง """
+    chat = get_object_or_404(ChatSession, id=session_id)
+
+    # ✅ ตรวจสอบสิทธิ์ของผู้ใช้
+    if request.user.is_superuser or request.user == chat.customer or (chat.shop and (request.user == chat.shop.owner or request.user in chat.shop.admins.all())):
+        messages = chat.messages.all().order_by("timestamp")
+
+        message_data = [
+            {
+                "sender": msg.sender.username,
+                "message": msg.text,
+                "image": msg.image.url if msg.image else None,
+                "timestamp": msg.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+            }
+            for msg in messages
+        ]
+
+        return JsonResponse({"messages": message_data})
+    else:
+        return JsonResponse({"error": "Forbidden"}, status=403)

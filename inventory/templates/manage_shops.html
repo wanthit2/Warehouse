@@ -45,8 +45,9 @@
                 <td>{{ shop.owner.username }}</td>
                 <td>{{ shop.created_at|date:"Y-m-d H:i" }}</td>
                 <td class="text-center">
-                    <a href="#" class="btn btn-warning btn-sm">✏ แก้ไข</a>
-                    <a href="{% url 'delete_shop' shop.id %}" class="btn btn-danger btn-sm" onclick="return confirm('ยืนยันการลบร้าน {{ shop.name }}?')">🗑 ลบ</a>
+                    <a href="{% url 'edit_shop' shop.id %}" class="btn btn-warning btn-sm">✏ แก้ไข</a>
+                    <a href="{% url 'delete_shop' shop.id %}" class="btn btn-danger btn-sm"
+                       onclick="return confirm('ยืนยันการลบร้าน {{ shop.name }}?')">🗑 ลบ</a>
                 </td>
             </tr>
             {% empty %}

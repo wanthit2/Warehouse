@@ -8,12 +8,63 @@
     {% load static %}
     <link rel="stylesheet" href="{% static 'styles.css' %}">
     <script src="{% static 'script.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            display: flex;
+        }
+        .content {
+            flex: 1;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin: 20px;
+        }
+        h1, h2 {
+            color: #343a40;
+            text-align: center;
+        }
+        .dashboard-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .dashboard-box {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            font-size: 1.1em;
+            color: #495057;
+        }
+        .graph-box {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            max-width: 600px;
+            text-align: center;
+        }
+        canvas {
+            width: 100% !important;
+            height: 250px !important;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <!-- Sidebar -->
         <aside class="sidebar">
-            <<a href="{% url 'my_view' %}" class="item-card"><i class="bi bi-bar-chart-line"></i> รายการ</a>
+            <a href="{% url 'my_view' %}" class="item-card"><i class="bi bi-bar-chart-line"></i> รายการ</a>
             <a href="{% url 'order_view' %}" class="item-card"><i class="bi bi-clipboard-data"></i> คำสั่งซื้อ</a>
             <a href="{% url 'graph_view' %}" class="item-card"><i class="bi bi-pie-chart"></i> กราฟ</a>
             <a href="{% url 'products' %}" class="item-card"><i class="bi bi-box-seam"></i> สินค้า</a>
@@ -21,31 +72,82 @@
             <a href="{% url 'home1' %}" class="home-icon"><i class="bi bi-house"></i></a>
         </aside>
 
-        <!-- Main Content -->
         <main class="content">
             <h1>แดชบอร์ดสินค้า</h1>
-
             <div class="dashboard-info">
-                <p>📦 สินค้าทั้งหมด: {{ total_products }}</p>
-                <p>📁 หมวดหมู่ทั้งหมด: {{ total_categories }}</p>
-                <p>🚚 ซัพพลายเออร์ทั้งหมด: {{ total_suppliers }}</p>
-                <p>🛒 คำสั่งซื้อทั้งหมด: {{ total_orders }}</p>
-                <p>💰 รายได้ทั้งหมด: ฿{{ total_revenue }}</p>
+                <div class="dashboard-box">📦 สินค้าทั้งหมด: {{ total_products }}</div>
+                <div class="dashboard-box">📁 หมวดหมู่ทั้งหมด: {{ total_categories }}</div>
+                <div class="dashboard-box">🚚 ซัพพลายเออร์ทั้งหมด: {{ total_suppliers }}</div>
+                <div class="dashboard-box">🛒 คำสั่งซื้อทั้งหมด: {{ total_orders }}</div>
+                <div class="dashboard-box">💰 รายได้ทั้งหมด: ฿{{ total_revenue }}</div>
             </div>
 
-            <h2>📈 กราฟจำนวนคำสั่งซื้อรายเดือน</h2>
-            <div class="graph-container">
-                <img src="data:image/png;base64,{{ order_graph }}" alt="กราฟจำนวนคำสั่งซื้อ" class="graph-image">
+            <div class="graph-box">
+                <h2>📈 กราฟจำนวนคำสั่งซื้อรายเดือน</h2>
+                <canvas id="orderChart"></canvas>
             </div>
 
-            <h2>💰 กราฟรายได้จากการขายรายเดือน</h2>
-            <div class="graph-container">
-                <img src="data:image/png;base64,{{ revenue_graph }}" alt="กราฟรายได้จากการขาย" class="graph-image">
+            <div class="graph-box">
+                <h2>💰 กราฟรายได้จากการขายรายเดือน</h2>
+                <canvas id="revenueChart"></canvas>
             </div>
-
         </main>
-
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var ctx1 = document.getElementById('orderChart').getContext('2d');
+            var orderChart = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: {{ order_labels|safe }},
+                    datasets: [{
+                        label: 'จำนวนคำสั่งซื้อ',
+                        data: {{ order_data|safe }},
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            var ctx2 = document.getElementById('revenueChart').getContext('2d');
+            var revenueChart = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: {{ revenue_labels|safe }},
+                    datasets: [{
+                        label: 'รายได้',
+                        data: {{ revenue_data|safe }},
+                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        });
+    </script>
 </body>
 </html>
+
+
+
 

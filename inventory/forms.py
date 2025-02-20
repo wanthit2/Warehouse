@@ -105,9 +105,32 @@ class UserForm(forms.ModelForm):
 
 
 class UserProfileForm(forms.ModelForm):
+    username = forms.CharField(max_length=150, required=True, label="ชื่อผู้ใช้")
+    email = forms.EmailField(required=True, label="อีเมล")
+
     class Meta:
         model = UserProfile
-        fields = ['phone_number', 'address', 'profile_picture']
+        fields = ['profile_picture', 'address']
+        labels = {
+            'profile_picture': "รูปโปรไฟล์",
+            'address': "ที่อยู่",
+        }
+        widgets = {
+            'address': forms.Textarea(attrs={'rows': 3, 'placeholder': 'กรอกที่อยู่ของคุณ...'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super(UserProfileForm, self).__init__(*args, **kwargs)
+        if user:
+            self.fields['username'].initial = user.username
+            self.fields['email'].initial = user.email
+
+    def save(self, commit=True):
+        profile = super(UserProfileForm, self).save(commit=False)
+        if commit:
+            profile.save()
+        return profile
 
 
 

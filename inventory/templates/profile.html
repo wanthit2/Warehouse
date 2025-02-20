@@ -86,13 +86,14 @@
         <p>{% if not profile.profile_picture %}คุณยังไม่มีรูปโปรไฟล์{% endif %}</p>
 
 
-
         <!-- แสดงข้อมูลโปรไฟล์ -->
         <div class="profile-info">
             <p><strong>ชื่อผู้ใช้:</strong> {{ profile.user.username }}</p>
             <p><strong>อีเมล์:</strong> {{ profile.user.email }}</p>
-            <p><strong>ข้อมูลเพิ่มเติม:</strong> {{ profile.some_field }}</p> <!-- เพิ่มฟิลด์ที่ต้องการแสดง -->
+            <p><strong>ที่อยู่:</strong> {% if profile.address %} {{ profile.address }} {% else %} ยังไม่มีข้อมูลที่อยู่
+                {% endif %}</p>
         </div>
+
 
         <!-- ปุ่มกลับหน้าแรกและแก้ไขโปรไฟล์ -->
         <div class="buttons">

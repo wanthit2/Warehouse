@@ -65,8 +65,8 @@ urlpatterns = [
     path('request_status/<int:user_id>/', views.request_status, name='request_status'),
 
     #URL ของร้าน
-    path('stores/', views.store_list, name='store_list'),
-    path('store/<int:store_id>/', views.store_detail, name='store_detail'),
+    #path('stores/', views.store_list, name='store_list'),
+    #path('store/<int:store_id>/', views.store_detail, name='store_detail'),
     path('add_admin/', views.add_admin, name='add_admin'),
     path('shop/<int:shop_id>/products/', views.product_list, name='product_list'),
     path('shop/<int:shop_id>/add_product/', views.add_product, name='add_product'),
@@ -110,4 +110,16 @@ urlpatterns = [
     path('admin/orders/pending/', views.order_list, {'status': 'pending'}, name='pending_orders'),
     # คำสั่งซื้อที่รอดำเนินการ
 
+
+
+    # ฟอร์มขอรีเซ็ตรหัสผ่าน (ใส่อีเมล)
+    path('password_reset/', auth_views.PasswordResetView.as_view(template_name='password_reset.html', success_url='/password_reset/done/'), name='password_reset'),
+    # หน้ายืนยันว่าระบบส่งลิงก์รีเซ็ตรหัสผ่านแล้ว
+    path('password_reset/done/', auth_views.PasswordResetDoneView.as_view(template_name='password_reset_done.html'), name='password_reset_done'),
+
+    # หน้าตั้งรหัสผ่านใหม่ (ผ่านลิงก์อีเมล)
+    path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(template_name='password_reset_confirm.html', success_url='/reset/done/'), name='password_reset_confirm'),
+
+    # หน้ายืนยันว่าตั้งรหัสผ่านใหม่สำเร็จ
+    path('reset/done/', auth_views.PasswordResetCompleteView.as_view(template_name='password_reset_complete.html'),name='password_reset_complete'),
 ]

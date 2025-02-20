@@ -18,9 +18,12 @@ class ChatSession(models.Model):
 class Message(models.Model):
     session = models.ForeignKey(ChatSession, on_delete=models.CASCADE, related_name="messages", null=True, blank=True)
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    text = models.TextField()
+    text = models.TextField(blank=True, null=True)  # ✅ เก็บข้อความ
+    image = models.ImageField(upload_to="chat_images/", blank=True, null=True)  # ✅ รองรับไฟล์รูปภาพ
     timestamp = models.DateTimeField(auto_now_add=True)
-
 
     class Meta:
         ordering = ["timestamp"]
+
+    def __str__(self):
+        return f"{self.sender.username}: {self.text[:30] if self.text else '📷 รูปภาพ'}"

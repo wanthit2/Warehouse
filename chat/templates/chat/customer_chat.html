@@ -1,99 +1,107 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Customer Chat</title>
     <style>
-        body { font-family: Arial, sans-serif; }
-        .chat-container { width: 50%; margin: auto; border: 1px solid #ccc; padding: 10px; }
-        .messages { height: 300px; overflow-y: auto; border-bottom: 1px solid #ccc; padding: 10px; }
         .message { margin-bottom: 10px; }
         .message.admin { text-align: right; color: blue; }
         .message.customer { text-align: left; color: green; }
-        .input-container { display: flex; margin-top: 10px; }
-        .input-container input { flex: 1; padding: 10px; }
-        .input-container button { padding: 10px; }
+        .message img { max-width: 200px; border-radius: 10px; }
     </style>
 </head>
 <body>
 <div class="chat-container">
-    <h3>แจ้งปัญหาสินค้า (ลูกค้า)</h3>
+    <h3>📜 ประวัติแชท</h3>
+    <button onclick="loadChatHistory()">🔄 โหลดประวัติแชท</button>
     <div class="messages" id="chat-box"></div>
+
+    <!-- ฟอร์มส่งข้อความและรูปภาพ -->
     <div class="input-container">
         <input type="text" id="message-input" placeholder="พิมพ์ข้อความ...">
+        <input type="file" id="image-input" accept="image/*">
         <button onclick="sendMessage()">ส่ง</button>
     </div>
 </div>
 
 <script>
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.startsWith(name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-
     const sessionId = "{{ chat.id }}";
     const username = "{{ request.user.username }}";
-    const chatBox = document.getElementById("chat-box");
-
     const socket = new WebSocket(`ws://${window.location.host}/ws/chat/${sessionId}/`);
+
+    // ✅ โหลดประวัติแชทเมื่อกดปุ่ม
+    function loadChatHistory() {
+        fetch(`/chat/api/chat/history/${sessionId}/`) // ✅ เพิ่ม "/chat" ให้ตรงกับ URL ที่ Django กำหนด
+
+            .then(response => response.json())
+            .then(data => {
+                const chatBox = document.getElementById("chat-box");
+                chatBox.innerHTML = "";
+                data.messages.forEach(msg => addMessageToChat(msg.sender, msg.message, msg.image, msg.timestamp));
+            })
+            .catch(error => console.error("❌ Error loading chat history:", error));
+    }
 
     socket.onopen = function () {
         console.log("✅ WebSocket connected!");
-
-        // ✅ โหลดข้อความเก่าจาก API
-        fetch(`/api/chat/messages/${sessionId}/`)
-            .then(response => response.json())
-            .then(data => loadMessages(data.messages))
-            .catch(error => console.error("❌ Error loading messages:", error));
+        loadChatHistory(); // ✅ โหลดประวัติแชทเมื่อเชื่อมต่อสำเร็จ
     };
 
     socket.onmessage = function (event) {
         const data = JSON.parse(event.data);
-        console.log("📩 New Message:", data);
-        addMessageToChat(data.sender, data.message);
+        addMessageToChat(data.sender, data.message, data.image, data.timestamp);
     };
 
-    function loadMessages(messages) {
-        chatBox.innerHTML = "";
-        messages.forEach(data => addMessageToChat(data.sender, data.message));
-    }
-
-    function addMessageToChat(sender, message) {
+    function addMessageToChat(sender, message, imageUrl, timestamp) {
+        const chatBox = document.getElementById("chat-box");
         const messageDiv = document.createElement("div");
         messageDiv.classList.add("message");
         messageDiv.classList.add(sender === username ? "customer" : "admin");
-        messageDiv.innerText = `${sender}: ${message}`;
+
+        if (message) {
+            messageDiv.innerHTML += `<b>${sender}:</b> ${message} <small>${timestamp}</small>`;
+        }
+
+        if (imageUrl) {
+            const img = document.createElement("img");
+            img.src = imageUrl;
+            messageDiv.appendChild(img);
+        }
+
         chatBox.appendChild(messageDiv);
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 
     function sendMessage() {
         const messageInput = document.getElementById("message-input");
-        const message = messageInput.value.trim();
+        const imageInput = document.getElementById("image-input");
+        const file = imageInput.files[0];
 
-        if (message !== "") {
+        const reader = new FileReader();
+        reader.onload = function () {
+            const base64Image = reader.result;
             socket.send(JSON.stringify({
-                message: message,
+                message: messageInput.value,
                 sender: username,
                 sessionid: sessionId,
-                csrfmiddlewaretoken: getCookie('csrftoken')
+                image: base64Image
+            }));
+            messageInput.value = "";
+            imageInput.value = "";
+        };
+
+        if (file) {
+            reader.readAsDataURL(file);
+        } else {
+            socket.send(JSON.stringify({
+                message: messageInput.value,
+                sender: username,
+                sessionid: sessionId
             }));
             messageInput.value = "";
         }
     }
 </script>
-
-
 </body>
 </html>

@@ -103,9 +103,9 @@
                         <form method="POST" action="{% url 'update_order_status' order.order_id %}">
                             {% csrf_token %}
                             <select name="status">
-                                <option value="pending" {% if order.status == "pending" %}selected{% endif %}>รอจัดส่ง</option>
-                                <option value="shipped" {% if order.status == "shipped" %}selected{% endif %}>จัดส่งแล้ว</option>
-                                <option value="cancelled" {% if order.status == "cancelled" %}selected{% endif %}>ยกเลิก</option>
+                                <option value="รอจัดส่ง" {% if order.status == "pending" %}selected{% endif %}>รอจัดส่ง</option>
+                                <option value="จัดส่งแล้ว" {% if order.status == "shipped" %}selected{% endif %}>จัดส่งแล้ว</option>
+                                <option value="ยกเลิก" {% if order.status == "cancelled" %}selected{% endif %}>ยกเลิก</option>
                             </select>
                             <button type="submit">✅ บันทึก</button>
                         </form>

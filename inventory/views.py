@@ -41,24 +41,38 @@ def home1(request):
 def home(request):
     return render(request, 'homepage.html')
 
+
+
+import json
+def user_is_shop_owner(user):
+    return Shop.objects.filter(owner=user).exists()
+
 @login_required
 def graph_view(request):
-    # 🔹 ดึงร้านค้าที่ผู้ใช้เป็นเจ้าของหรือแอดมิน
-    store = Store.objects.filter(owner=request.user).first()
+    # 🔹 ตรวจสอบว่า user เป็นเจ้าของร้านหรือไม่
+    if not user_is_shop_owner(request.user):
+        return redirect('home1')  # 🔥 เปลี่ยนเส้นทางหากไม่ใช่เจ้าของร้าน
 
-    if not store:
+    # 🔹 ดึงร้านค้าที่ผู้ใช้เป็นเจ้าของ
+    shop = Shop.objects.filter(owner=request.user).first()
+
+    if not shop:
         return render(request, 'graph.html', {'error_message': "คุณไม่มีร้านค้า"})
 
     # 🔹 คำนวณสถิติเฉพาะร้านนี้
-    total_products = Product.objects.filter(store=store).count()
-    total_categories = Category.objects.filter(product__store=store).distinct().count()
-    total_suppliers = Supplier.objects.count()  # ถ้าซัพพลายเออร์เชื่อมกับร้าน ต้องแก้ query
-    total_orders = Order.objects.filter(store=store).count()
-    total_revenue = Order.objects.filter(store=store).aggregate(total=Sum(F('price') * F('quantity')))['total'] or 0
+    total_products = Product.objects.filter(shop=shop).count()
+    total_categories = Category.objects.filter(product__shop=shop).distinct().count()
+    total_suppliers = Supplier.objects.count()
+    total_orders = Order.objects.filter(shop=shop).count()
+
+    # 🔹 **แก้ไขการคำนวณรายได้ ให้รวมเฉพาะออเดอร์ที่ไม่ถูกยกเลิก**
+    total_revenue = Order.objects.filter(shop=shop).exclude(status="ยกเลิก").aggregate(
+        total=Sum(F('price') * F('quantity'))
+    )['total'] or 0  # 🔥 รวมเฉพาะคำสั่งซื้อที่ไม่ถูกยกเลิก
 
     # 🔹 ดึงข้อมูลคำสั่งซื้อรายเดือน (เฉพาะร้านนี้)
     orders_by_month = (
-        Order.objects.filter(store=store)
+        Order.objects.filter(shop=shop).exclude(status="ยกเลิก")  # 🔥 ไม่รวมออเดอร์ที่ถูกยกเลิก
         .values_list('created_at__month')
         .annotate(
             total_orders=Count('order_id'),
@@ -66,47 +80,51 @@ def graph_view(request):
         )
     )
 
-    # 🔹 แปลงข้อมูลให้ใช้ในกราฟ
+    # 🔹 แปลงข้อมูลให้ใช้ในกราฟ Chart.js
     months = [calendar.month_abbr[month[0]] for month in orders_by_month]
     order_counts = [month[1] for month in orders_by_month]
-    revenues = [month[2] or 0 for month in orders_by_month]
-
-    # 🔹 สร้างกราฟคำสั่งซื้อรายเดือน
-    plt.figure(figsize=(8, 4))
-    plt.plot(months, order_counts, marker='o', linestyle='-', color='b', label='คำสั่งซื้อ')
-    plt.xlabel('เดือน')
-    plt.ylabel('จำนวนคำสั่งซื้อ')
-    plt.title(f'จำนวนคำสั่งซื้อรายเดือนของร้าน {store.name}')
-    plt.legend()
-    buffer = io.BytesIO()
-    plt.savefig(buffer, format='png')
-    buffer.seek(0)
-    order_graph = base64.b64encode(buffer.getvalue()).decode()
-    buffer.close()
-
-    # 🔹 สร้างกราฟรายได้รายเดือน
-    plt.figure(figsize=(8, 4))
-    plt.bar(months, revenues, color='green')
-    plt.xlabel('เดือน')
-    plt.ylabel('รายได้ (บาท)')
-    plt.title(f'รายได้จากการขายรายเดือนของร้าน {store.name}')
-    buffer = io.BytesIO()
-    plt.savefig(buffer, format='png')
-    buffer.seek(0)
-    revenue_graph = base64.b64encode(buffer.getvalue()).decode()
-    buffer.close()
+    revenues = [float(month[2] or 0) for month in orders_by_month]  # 🔥 แปลง Decimal เป็น float
 
     context = {
         'total_products': total_products,
         'total_categories': total_categories,
         'total_suppliers': total_suppliers,
         'total_orders': total_orders,
-        'total_revenue': total_revenue,
-        'order_graph': order_graph,
-        'revenue_graph': revenue_graph,
-        'store_name': store.name,
+        'total_revenue': float(total_revenue),  # 🔥 แปลง Decimal เป็น float
+        'order_labels': json.dumps(months),
+        'order_data': json.dumps(order_counts),
+        'revenue_labels': json.dumps(months),
+        'revenue_data': json.dumps(revenues),
+        'shop_name': shop.name,
     }
     return render(request, 'graph.html', context)
+
+
+
+@login_required
+def cancel_order(request, order_id):
+    order = Order.objects.filter(order_id=order_id, shop__owner=request.user).first()
+
+    if order and order.status != "ยกเลิก":  # 🔥 ตรวจสอบเป็น "ยกเลิก" แทน 'cancelled'
+        # 🔹 คำนวณจำนวนเงินที่ต้องลดลงก่อนเปลี่ยนสถานะ
+        order_total = order.price * order.quantity
+
+        # 🔹 เปลี่ยนสถานะเป็น "ยกเลิก"
+        order.status = "ยกเลิก"
+        order.save()
+
+        # 🔹 คำนวณรายได้ใหม่หลังจากออเดอร์ถูกยกเลิก
+        shop = order.shop
+        total_revenue = Order.objects.filter(shop=shop).exclude(status="ยกเลิก").aggregate(
+            total=Sum(F('price') * F('quantity'))
+        )['total'] or 0  # 🔥 รวมเฉพาะออเดอร์ที่ยังไม่นับว่ายกเลิก
+
+        # 🔹 บันทึกยอดเงินใหม่ในร้าน
+        shop.total_revenue = total_revenue
+        shop.save()
+
+    return redirect('graph_view')
+
 
 
 
@@ -135,8 +153,8 @@ def my_view(request):
     category_filter = request.GET.get('category', '')  # รับค่าหมวดหมู่จาก GET
     status_filter = request.GET.get('status', '')  # รับค่าสถานะจาก GET
 
-    # ดึงสินค้าทั้งหมด
-    products = Product.objects.all()
+    # 🔹 กรองเฉพาะสินค้าของร้านที่ user เป็นเจ้าของ
+    products = Product.objects.filter(shop__owner=request.user)
 
     # กรองตามชื่อสินค้า (ค้นหา)
     if query:
@@ -151,8 +169,8 @@ def my_view(request):
         products = products.filter(status=status_filter)
 
     # ดึงรายการหมวดหมู่และสถานะทั้งหมดสำหรับ dropdown
-    categories = Category.objects.all()
-    statuses = Product.objects.values_list('status', flat=True).distinct()
+    categories = Category.objects.filter(product__shop__owner=request.user).distinct()
+    statuses = products.values_list('status', flat=True).distinct()  # 🔹 ใช้ products ที่ถูกกรองแล้ว
 
     return render(request, 'list.html', {
         'products': products,
@@ -167,13 +185,19 @@ def my_view(request):
 
 @login_required
 def order_view(request):
-    query = request.GET.get('q', '')  # รับค่าค้นหาจาก GET
+    query = request.GET.get('q', '')
 
     # ✅ ดึงข้อมูล Order พร้อมกับข้อมูลร้านค้า (shop)
     orders = Order.objects.select_related('shop').filter(user=request.user)
 
+    # ✅ เชื่อมโยง Product กับ Order
+    for order in orders:
+        product = Product.objects.filter(product_name=order.product_name).first()
+        if product:
+            order.product_id = product.id  # ✅ เพิ่ม product_id ให้ Order ใช้ใน Template
+
     if query:
-        orders = orders.filter(product_name__icontains=query)  # ✅ ค้นหาสินค้าตามคำค้นหา
+        orders = orders.filter(product_name__icontains=query)
 
     return render(request, 'order1.html', {'orders': orders, 'query': query})
 
@@ -216,29 +240,30 @@ def delete_order(request, order_id):
     return redirect('my_view')  # กลับไปยังหน้ารายการคำสั่งซื้อ
 
 
-
+User = get_user_model()
 def login_view(request):
-    if request.method == 'POST':
-        username = request.POST.get('username', '').strip()
-        password = request.POST.get('password', '').strip()
+    if request.method == "POST":
+        email = request.POST.get("email", "").strip()
+        password = request.POST.get("password", "").strip()
 
-        # ตรวจสอบข้อมูลผู้ใช้
-        user = authenticate(request, username=username, password=password)
+        try:
+            user = User.objects.get(email=email)  # ค้นหาผู้ใช้จากอีเมล
+            user = authenticate(request, username=user.username, password=password)  # ใช้ username ที่ผูกกับอีเมล
+        except User.DoesNotExist:
+            user = None
 
         if user is not None:
-            auth_login(request, user)  # ล็อกอินเข้า session
-            messages.success(request, 'เข้าสู่ระบบสำเร็จ')
+            auth_login(request, user)
+            messages.success(request, "เข้าสู่ระบบสำเร็จ")
 
-            # ถ้าเป็น superuser (superadmin) ให้ไปที่ /admin/
             if user.is_superuser:
-                return redirect('/admin_home/')
+                return redirect("/admin_home/")
             else:
-                return redirect('home1')  # ผู้ใช้ทั่วไปไปที่ home1
-
+                return redirect("home1")  # ผู้ใช้ทั่วไปไปที่ home1
         else:
-            messages.error(request, 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง')
+            messages.error(request, "อีเมลหรือรหัสผ่านไม่ถูกต้อง")
 
-    return render(request, 'login.html')
+    return render(request, "login.html")
 
 def custom_login(request):
     if request.method == 'POST':
@@ -264,6 +289,10 @@ def custom_login(request):
             return redirect('login')  # กลับไปที่หน้า login
 
     return render(request, 'login.html')
+
+
+
+
 
 def sales_view(request):
     # ดึงข้อมูลที่เกี่ยวข้องกับฝ่ายขาย
@@ -509,22 +538,32 @@ def admin_order_list(request):
 
 @login_required
 def update_order_status(request, order_id):
-    order = get_object_or_404(Order, order_id=order_id)
+    order = get_object_or_404(Order, order_id=order_id)  # 🔥 ใช้ order_id แทน id
 
-    # ตรวจสอบว่าสามารถเปลี่ยนสถานะได้
-    if not (request.user.is_superuser or order.shop.owner == request.user or request.user in order.shop.admins.all()):
-        return HttpResponseForbidden("คุณไม่มีสิทธิ์แก้ไขสถานะคำสั่งซื้อนี้")
+    # ตรวจสอบสิทธิ์ของเจ้าของร้าน
+    if request.user != order.shop.owner and not request.user.is_superuser:
+        return render(request, 'order_list.html', {'error_message': "คุณไม่มีสิทธิ์แก้ไขคำสั่งซื้อนี้"})
 
-    if request.method == 'POST':
-        new_status = request.POST.get('status')
-        if new_status in ['pending', 'shipped', 'cancelled']:  # ป้องกันค่าที่ไม่ถูกต้อง
-            order.status = new_status
-            order.save()
-            messages.success(request, f'อัปเดตสถานะของ Order {order.order_id} เป็น {new_status} แล้ว')
-        else:
-            messages.error(request, 'สถานะไม่ถูกต้อง')
+    if request.method == "POST":
+        new_status = request.POST.get("status")
+
+        # ถ้าคำสั่งซื้อถูกยกเลิก ต้องลดรายได้ของร้าน
+        if new_status == "cancelled" and order.status != "cancelled":
+            shop = order.shop
+            total_revenue = Order.objects.filter(shop=shop, status='shipped').aggregate(
+                total=Sum(F('price') * F('quantity'))
+            )['total'] or 0
+
+            # 🔹 บันทึกยอดเงินใหม่ในร้าน
+            shop.total_revenue = total_revenue
+            shop.save()
+
+        # อัปเดตสถานะคำสั่งซื้อ
+        order.status = new_status
+        order.save()
 
     return redirect('admin_order_list')
+
 
 
 
@@ -537,52 +576,17 @@ def admin_delete_order(request, order_id):
 
 @login_required
 def profile(request):
-    try:
-        user_profile = UserProfile.objects.get(user=request.user)
-    except UserProfile.DoesNotExist:
-        return redirect('create_profile')  # Redirect if profile doesn't exist
-
-    return render(request, 'profile.html', {'profile': user_profile})
-
-@login_required
-def create_profile(request):
-    if request.method == 'POST':
-        form = UserProfileForm(request.POST, request.FILES)
-        if form.is_valid():
-            profile = form.save(commit=False)
-            profile.user = request.user
-            profile.save()
-            return redirect('profile')  # Redirect to the profile page
-    else:
-        form = UserProfileForm()
-
-    return render(request, 'create_profile.html', {'form': form})
-
-@login_required
-def edit_profile(request):
-    try:
-        user_profile = UserProfile.objects.get(user=request.user)
-    except UserProfile.DoesNotExist:
-        user_profile = None
-
-    if request.method == 'POST':
-        form = UserProfileForm(request.POST, request.FILES, instance=user_profile)
-        if form.is_valid():
-            form.save()
-            return redirect('profile')  # เปลี่ยนเส้นทางไปยังหน้าโปรไฟล์หลังจากบันทึก
-    else:
-        form = UserProfileForm(instance=user_profile)
-
-    return render(request, 'edit_profile.html', {'form': form})
-
-@login_required
-def profile_view(request):
     user_profile, created = UserProfile.objects.get_or_create(user=request.user)
 
     if request.method == 'POST':
         form = UserProfileForm(request.POST, request.FILES, instance=user_profile)
         if form.is_valid():
-            form.save()
+            profile = form.save(commit=False)
+            profile.user = request.user
+            profile.save()
+            request.user.username = form.cleaned_data.get('username', request.user.username)
+            request.user.email = form.cleaned_data.get('email', request.user.email)
+            request.user.save()
             messages.success(request, "อัปเดตโปรไฟล์เรียบร้อยแล้ว!")
             return redirect('profile')
 
@@ -590,6 +594,47 @@ def profile_view(request):
         form = UserProfileForm(instance=user_profile)
 
     return render(request, 'profile.html', {'form': form, 'profile': user_profile})
+
+
+@login_required
+def create_profile(request):
+    if request.method == "POST":
+        form = UserProfileForm(request.POST, request.FILES)
+        if form.is_valid():
+            profile = form.save(commit=False)  # หยุดก่อนบันทึกลง DB
+            profile.user = request.user  # กำหนด user
+            profile.save()
+            messages.success(request, "โปรไฟล์ถูกสร้างเรียบร้อยแล้ว!")
+            return redirect("profile")
+
+        else:
+            messages.error(request, "เกิดข้อผิดพลาด! กรุณาตรวจสอบข้อมูลของคุณ.")
+
+    else:
+        form = UserProfileForm()
+
+    return render(request, "create_profile.html", {"form": form})
+
+
+@login_required
+def edit_profile(request):
+    profile, created = UserProfile.objects.get_or_create(user=request.user)
+
+    if request.method == "POST":
+        form = UserProfileForm(request.POST, request.FILES, instance=profile, user=request.user)
+        if form.is_valid():
+            profile = form.save(commit=False)  # หยุดก่อนบันทึกลง DB
+            profile.user = request.user  # กำหนด user ก่อนบันทึก
+            profile.save()
+            request.user.username = form.cleaned_data['username']
+            request.user.email = form.cleaned_data['email']
+            request.user.save()
+            return redirect('profile')  # กลับไปที่หน้าโปรไฟล์
+    else:
+        form = UserProfileForm(instance=profile, user=request.user)
+
+    return render(request, 'edit_profile.html', {'form': form})
+
 
 
 
@@ -680,15 +725,6 @@ def delete_order(request, order_id):
     order.delete()
     return redirect('admin_orders')
 
-def store_list(request):
-    stores = Store.objects.all()
-    return render(request, 'store_list.html', {'stores': stores})
-
-# หน้าแสดงสต็อกสินค้าของร้าน
-def store_stock(request, store_id):
-    store = get_object_or_404(Store, id=store_id)
-    stocks = Stock.objects.filter(store=store)
-    return render(request, 'store_stock.html', {'store': store, 'stocks': stocks})
 
 # เพิ่มสินค้าในสต็อก
 def add_stock(request, store_id):
@@ -950,16 +986,18 @@ def add_shop(request):
         form = ShopForm()
     return render(request, 'shop_form.html', {'form': form})
 
+
 def edit_shop(request, shop_id):
     shop = get_object_or_404(Shop, id=shop_id)
-    if request.method == "POST":
+    if request.method == 'POST':
         form = ShopForm(request.POST, instance=shop)
         if form.is_valid():
             form.save()
-            return redirect('manage_shops')
+            return redirect('manage_shops')  # หรือเปลี่ยนเป็นหน้าที่ต้องการให้ไปหลังแก้ไข
     else:
         form = ShopForm(instance=shop)
-    return render(request, 'shop_form.html', {'form': form})
+
+    return render(request, 'edit_shop.html', {'form': form, 'shop': shop})
 
 def delete_shop(request, shop_id):
     shop = get_object_or_404(Shop, id=shop_id)
@@ -1063,6 +1101,8 @@ from django.http import HttpResponseForbidden
 from .models import Product
 
 
+LOW_STOCK_THRESHOLD = 5  # 🔥 กำหนดค่าขั้นต่ำที่ถือว่าสินค้าใกล้หมด
+
 def stock_view(request):
     # ตรวจสอบว่าผู้ใช้ล็อกอินหรือไม่
     if not request.user.is_authenticated:
@@ -1074,15 +1114,21 @@ def stock_view(request):
 
     # ถ้าเป็นเจ้าของร้านหรือแอดมินของร้าน ให้ดึงข้อมูลเฉพาะของร้านตัวเอง
     elif request.user.shop_set.exists():  # ตรวจสอบว่าผู้ใช้เป็นเจ้าของร้านหรือไม่
-        products = Product.objects.filter(shop__owner=request.user)  # ค้นหาสินค้าของร้านที่ผู้ใช้เป็นเจ้าของ
+        products = Product.objects.filter(shop__owner=request.user)
 
     elif request.user.admin_shops.exists():  # ตรวจสอบว่าเป็นแอดมินของร้าน
-        products = Product.objects.filter(shop__admins=request.user)  # ค้นหาสินค้าของร้านที่ผู้ใช้เป็นแอดมิน
+        products = Product.objects.filter(shop__admins=request.user)
 
     else:
         return HttpResponseForbidden("คุณไม่มีสิทธิ์เข้าถึงหน้านี้")
 
-    return render(request, 'stock_view.html', {'products': products})
+    # 🔹 ค้นหาสินค้าที่เหลือน้อยกว่าค่าที่กำหนด
+    low_stock_products = products.filter(quantity__lte=LOW_STOCK_THRESHOLD)
+
+    return render(request, 'stock_view.html', {
+        'products': products,
+        'low_stock_products': low_stock_products,  # 🔥 ส่งสินค้าใกล้หมดไปยัง template
+    })
 
 
 # ฟังก์ชันเพิ่มสต็อก
