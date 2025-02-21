@@ -50,7 +50,7 @@
                 </select>
 
                 <button type="submit" class="btn">🔎 กรอง</button>
-                <a href="{% url 'products' %}" class="btn reset-btn">🔄 รีเซ็ต</a>
+                <a href="{% url 'my_view' %}" class="btn reset-btn">🔄 รีเซ็ต</a>
             </form>
         </div>
 
@@ -80,7 +80,9 @@
                 <td>{{ product.product_name }}</td>
                 <td>{{ product.category.name|default:"ไม่ระบุ" }}</td>
                 <td>{{ product.price|floatformat:2 }}</td>
-                <td>{{ product.stock_quantity }}</td>
+                <td>{{ product.total_stock|default:"0" }}</td>
+
+
                 <td>
                     {% if product.status == "available" %}
                         ✅ พร้อมขาย

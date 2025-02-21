@@ -7,9 +7,9 @@ User = get_user_model()
 
 # 📌 การแสดงผลของ Order ใน Admin
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('order_id', 'product_name', 'price', 'quantity', 'status', 'user', 'shop', 'total_price')
+    list_display = ('order_id', 'product', 'price', 'quantity', 'status', 'user', 'shop', 'total_price')
     list_filter = ('status', 'shop')  # เปลี่ยน store เป็น shop
-    search_fields = ('product_name', 'order_id', 'user__username')
+    search_fields = ('product', 'order_id', 'user__username')
 
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
@@ -42,7 +42,7 @@ admin.site.register(Shop, ShopAdmin)
 
 # 📌 ปรับ StockAdmin ให้ใช้ Shop แทน Store
 class StockAdmin(admin.ModelAdmin):
-    list_display = ('product_name', 'quantity', 'price', 'shop')  # เปลี่ยน store เป็น shop
+    list_display = ('product', 'quantity', 'price', 'shop')  # เปลี่ยน store เป็น shop
 
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
@@ -64,3 +64,8 @@ class ProductAdmin(admin.ModelAdmin):
 
 admin.site.register(Product, ProductAdmin)
 
+
+from .models import Category
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ('name',)

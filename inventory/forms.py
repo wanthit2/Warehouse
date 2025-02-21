@@ -1,5 +1,5 @@
 from django import forms
-from .models import Order, Product, UserProfile, Stock, CustomUser, ShopOwnerRequest, Shop
+from .models import Order, Product, UserProfile, Stock, CustomUser, ShopOwnerRequest, Shop, Category
 from .models import CustomUser
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.forms import AuthenticationForm
@@ -50,18 +50,35 @@ class OrderForm(forms.ModelForm):
 
 ### 🔹 แก้ไข `ProductForm` (ลบ `store`)
 class ProductForm(forms.ModelForm):
+    category = forms.ModelChoiceField(
+        queryset=Category.objects.all(),
+        empty_label="เลือกหมวดหมู่",  # ✅ เปลี่ยนข้อความ dropdown
+        required=True,
+        label="หมวดหมู่"  # ✅ เปลี่ยน Label เป็นภาษาไทย
+    )
     class Meta:
         model = Product
-        fields = ['shop', 'product_name', 'description', 'price', 'quantity', 'image', 'stock_quantity']
+        fields = ['product_name', 'description', 'price', 'quantity','category', 'unit', 'image', 'stock_quantity']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 4, 'cols': 40}),
         }
 
+    def __init__(self, *args, **kwargs):
+        self.shop = kwargs.pop('shop', None)  # ✅ รับ shop จาก views
+        super().__init__(*args, **kwargs)
+
+        # ✅ ให้สามารถเลือกหมวดหมู่ได้
+        self.fields['category'].queryset = Category.objects.all()
+
+
     def save(self, commit=True):
         product = super().save(commit=False)
+        if self.shop:
+            product.shop = self.shop  # ✅ กำหนดร้านอัตโนมัติ
         if commit:
             product.save()
         return product
+
 
 
 ### 🔹 ฟอร์มสมัครสมาชิก
@@ -127,7 +144,7 @@ class UserProfileForm(forms.ModelForm):
 class StockForm(forms.ModelForm):
     class Meta:
         model = Stock
-        fields = ['product_name', 'quantity', 'price', 'description']
+        fields = ['shop', 'product', 'quantity', 'price', 'description']
 
 
 class SearchStockForm(forms.Form):

@@ -2,11 +2,15 @@ from django.apps import AppConfig
 
 
 class InventoryConfig(AppConfig):
-    default_auto_field = "django.db.models.BigAutoField"
-    name = "inventory"
-class InventoryConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
     name = 'inventory'
 
+    def ready(self):
+        import inventory.signals  # ✅ โหลด signals อัตโนมัติ
 
-def ready(self):
-    import inventory.signals
+
+
+
+
+
+

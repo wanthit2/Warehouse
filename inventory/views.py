@@ -32,6 +32,10 @@ import io
 from django.db.models import Sum, Count, F
 import calendar
 
+from django.db.models import Sum, Value
+from django.db.models.functions import Coalesce
+
+
 
 
 
@@ -149,55 +153,40 @@ def category_view(request):
     return render(request, 'list.html', {'categories': categories})
 
 def my_view(request):
-    query = request.GET.get('q', '')  # รับค่าค้นหาจาก GET parameter
-    category_filter = request.GET.get('category', '')  # รับค่าหมวดหมู่จาก GET
-    status_filter = request.GET.get('status', '')  # รับค่าสถานะจาก GET
+    query = request.GET.get('q', '')
+    category_filter = request.GET.get('category', '')
+    status_filter = request.GET.get('status', '')
 
-    # 🔹 กรองเฉพาะสินค้าของร้านที่ user เป็นเจ้าของ
-    products = Product.objects.filter(shop__owner=request.user)
+    # ✅ ใช้ Coalesce ให้ total_stock เป็น 0 ถ้าไม่มีสินค้าใน stock
+    products = Product.objects.annotate(
+        total_stock=Coalesce(Sum('stock__quantity'), Value(0))  # ✅ ป้องกัน None
+    )
 
-    # กรองตามชื่อสินค้า (ค้นหา)
     if query:
         products = products.filter(product_name__icontains=query)
-
-    # กรองตามหมวดหมู่
     if category_filter:
-        products = products.filter(category__name=category_filter)
-
-    # กรองตามสถานะ
+        products = products.filter(category__id=category_filter)
     if status_filter:
         products = products.filter(status=status_filter)
-
-    # ดึงรายการหมวดหมู่และสถานะทั้งหมดสำหรับ dropdown
-    categories = Category.objects.filter(product__shop__owner=request.user).distinct()
-    statuses = products.values_list('status', flat=True).distinct()  # 🔹 ใช้ products ที่ถูกกรองแล้ว
 
     return render(request, 'list.html', {
         'products': products,
         'query': query,
-        'categories': categories,
-        'statuses': statuses,
+        'categories': Category.objects.all(),
         'selected_category': category_filter,
         'selected_status': status_filter,
     })
-
-
 
 @login_required
 def order_view(request):
     query = request.GET.get('q', '')
 
-    # ✅ ดึงข้อมูล Order พร้อมกับข้อมูลร้านค้า (shop)
-    orders = Order.objects.select_related('shop').filter(user=request.user)
+    # ✅ ดึงข้อมูล Order พร้อมกับข้อมูลร้านค้า (shop) และสินค้า (product)
+    orders = Order.objects.select_related('shop', 'product').filter(user=request.user)
 
-    # ✅ เชื่อมโยง Product กับ Order
-    for order in orders:
-        product = Product.objects.filter(product_name=order.product_name).first()
-        if product:
-            order.product_id = product.id  # ✅ เพิ่ม product_id ให้ Order ใช้ใน Template
-
+    # ✅ กรองตามชื่อสินค้า (ใช้ product.product_name)
     if query:
-        orders = orders.filter(product_name__icontains=query)
+        orders = orders.filter(product__product_name__icontains=query)
 
     return render(request, 'order1.html', {'orders': orders, 'query': query})
 
@@ -425,6 +414,10 @@ def product_view(request, product_id):
         product = None
     return render(request, 'product_detail.html', {'product': product})
 
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from .models import Order, Product
+
 @login_required
 def order_create(request, product_id):
     product = get_object_or_404(Product, id=product_id)
@@ -438,14 +431,13 @@ def order_create(request, product_id):
                 'error_message': 'จำนวนสินค้าที่ต้องการสั่งซื้อไม่ถูกต้อง',
             })
 
-        # ลดสต๊อกสินค้า
+        # ✅ ลดสต๊อกสินค้า
         product.quantity -= quantity
         product.save()
 
         # ✅ สร้างคำสั่งซื้อ พร้อมบันทึก `product`
         Order.objects.create(
-            product=product,  # ✅ เพิ่มการบันทึก product
-            product_name=product.product_name,
+            product=product,  # ✅ ใช้ ForeignKey product
             price=product.price,
             quantity=quantity,
             status='pending',
@@ -460,26 +452,37 @@ def order_create(request, product_id):
 
 
 
+
 @login_required
 def order_confirmation(request, product_id):
     product = get_object_or_404(Product, id=product_id)
 
     if request.method == 'POST':
         quantity = request.session.get('quantity', 1)
-
-        # ✅ ตรวจสอบว่ามีร้านค้าหรือไม่
         shop = product.shop if hasattr(product, 'shop') else None
 
-        # ✅ บันทึกคำสั่งซื้อพร้อมร้านค้า
-        Order.objects.create(
-            product_name=product.product_name,
+        # ✅ บันทึกคำสั่งซื้อโดยใช้ ForeignKey
+        order = Order.objects.create(
+            product=product,  # ✅ ใช้ ForeignKey แทน String
             price=product.price,
             quantity=quantity,
             status='pending',
             image=product.image,
             user=request.user,
-            shop=shop,  # ✅ กำหนดร้านค้าให้ถูกต้อง
+            shop=shop,
         )
+
+        # ✅ ลดสต๊อกสินค้า
+        stock = Stock.objects.filter(product=product).first()
+        if stock:
+            if stock.quantity >= quantity:
+                stock.quantity -= quantity
+                stock.save()
+                print(f"✅ อัปเดตสต๊อกสำเร็จ! คงเหลือ: {stock.quantity} ชิ้น")
+            else:
+                print(f"⚠️ สินค้า {product.product_name} ไม่เพียงพอในสต๊อก!")
+        else:
+            print(f"⚠️ ไม่พบสินค้า {product.product_name} ในสต๊อก!")
 
         return redirect('order_success')
 
@@ -493,13 +496,8 @@ def order_confirmation(request, product_id):
 
 
 
-
-
-
 def order_success(request):
     return render(request, 'order_success.html')
-
-
 
 
 def order_list(request):
@@ -668,6 +666,8 @@ def admin_login(request):
             messages.error(request, "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง หรือคุณไม่มีสิทธิ์เข้าถึง")
 
     return redirect('admin_login')
+
+
 
 @login_required
 def admin_order_list(request):
@@ -1059,30 +1059,37 @@ from .models import Product
 LOW_STOCK_THRESHOLD = 5  # 🔥 กำหนดค่าขั้นต่ำที่ถือว่าสินค้าใกล้หมด
 
 def stock_view(request):
-    # ตรวจสอบว่าผู้ใช้ล็อกอินหรือไม่
+    # ✅ ตรวจสอบว่าผู้ใช้ล็อกอินหรือไม่
     if not request.user.is_authenticated:
         return HttpResponseForbidden("คุณต้องเข้าสู่ระบบก่อน")
 
-    # ถ้าเป็น superuser ให้ดึงข้อมูลสินค้าทั้งหมด
+    # ✅ ดึงข้อมูลจาก `Stock` โดยรวมจำนวนสินค้าของแต่ละ `Product`
     if request.user.is_superuser:
-        products = Product.objects.all()
+        stocks = Stock.objects.select_related("product", "shop").all()
 
-    # ถ้าเป็นเจ้าของร้านหรือแอดมินของร้าน ให้ดึงข้อมูลเฉพาะของร้านตัวเอง
-    elif request.user.owned_shops.exists():  # ตรวจสอบว่าผู้ใช้เป็นเจ้าของร้านหรือไม่
-        products = Product.objects.filter(shop__owner=request.user)
+    elif request.user.owned_shops.exists():
+        stocks = Stock.objects.filter(shop__owner=request.user).select_related("product", "shop")
 
-    elif request.user.admin_shops.exists():  # ตรวจสอบว่าเป็นแอดมินของร้าน
-        products = Product.objects.filter(shop__admins=request.user)
+    elif request.user.admin_shops.exists():
+        stocks = Stock.objects.filter(shop__admins=request.user).select_related("product", "shop")
 
     else:
         return HttpResponseForbidden("คุณไม่มีสิทธิ์เข้าถึงหน้านี้")
 
-    # 🔹 ค้นหาสินค้าที่เหลือน้อยกว่าค่าที่กำหนด
-    low_stock_products = products.filter(quantity__lte=LOW_STOCK_THRESHOLD)
+        # ✅ รับค่าจากฟอร์มค้นหา
+    search_query = request.GET.get('search', '').strip()
+    if search_query:
+        stocks = stocks.filter(
+            Q(product__product_name__icontains=search_query) |  # ✅ ค้นหาจากชื่อสินค้า
+            Q(product__category__name__icontains=search_query)  # ✅ ค้นหาจากหมวดหมู่สินค้า
+        )
+
+    # ✅ ค้นหาสินค้าที่เหลือน้อย
+    low_stock_products = stocks.filter(quantity__lte=LOW_STOCK_THRESHOLD)
 
     return render(request, 'stock_view.html', {
-        'products': products,
-        'low_stock_products': low_stock_products,  # 🔥 ส่งสินค้าใกล้หมดไปยัง template
+        'stocks': stocks,
+        'low_stock_products': low_stock_products,
     })
 
 
@@ -1160,42 +1167,71 @@ def manage_shop_admins(request, shop_id):
 def manage_products(request, shop_id):
     shop = get_object_or_404(Shop, id=shop_id)
 
-    # ✅ ตรวจสอบสิทธิ์: เจ้าของร้าน หรือ Admin ของร้านเท่านั้นที่เข้าได้
+    # ✅ ตรวจสอบสิทธิ์เฉพาะเจ้าของร้านหรือ Admin เท่านั้น
     if request.user != shop.owner and request.user not in shop.admins.all():
         return redirect('home')
 
     products = shop.products.all()
-    product_forms = {product.id: ProductForm(instance=product) for product in products}  # ✅ ใช้ Dictionary แทน List
+    product_forms = {product.id: ProductForm(instance=product) for product in products}
 
     if request.method == 'POST':
-        action = request.POST.get('action')  # ✅ อ่านค่าการกระทำจาก `name="action"`
+        action = request.POST.get('action')
+        product_id = request.POST.get('product_id')
 
-        if action == 'add_product':  # ✅ เพิ่มสินค้า
+        # ✅ เพิ่มสินค้า + เพิ่ม Stock
+        if action == 'add_product':
             form = ProductForm(request.POST, request.FILES)
             if form.is_valid():
                 new_product = form.save(commit=False)
-                new_product.shop = shop  # ✅ กำหนดให้สินค้านี้อยู่ในร้านนี้
+                new_product.shop = shop
                 new_product.save()
-                return redirect('manage_products', shop_id=shop.id)
 
-        elif action == 'delete_product':  # ✅ ลบสินค้า
-            product_id = request.POST.get('product_id')
-            product = get_object_or_404(Product, id=product_id, shop=shop)  # ✅ ตรวจสอบว่าอยู่ในร้านนี้
-            product.delete()
+                # ✅ สร้าง Stock สำหรับสินค้านี้
+                Stock.objects.create(
+                    shop=shop,
+                    product=new_product,
+                    quantity=request.POST.get('stock_quantity', 0),  # ค่าเริ่มต้นเป็น 0 ถ้าไม่ได้ใส่
+                    price=new_product.price
+                )
+
+                messages.success(request, f"เพิ่มสินค้า {new_product.product_name} สำเร็จ!")
             return redirect('manage_products', shop_id=shop.id)
 
-        elif action == 'edit_product':  # ✅ แก้ไขสินค้า
-            product_id = request.POST.get('product_id')
-            product = get_object_or_404(Product, id=product_id, shop=shop)  # ✅ ตรวจสอบว่าอยู่ในร้านนี้
+        # ✅ แก้ไขสินค้า + อัปเดต Stock
+        elif action == 'edit_product' and product_id:
+            product = get_object_or_404(Product, id=product_id, shop=shop)
             form = ProductForm(request.POST, request.FILES, instance=product)
             if form.is_valid():
-                form.save()
+                updated_product = form.save()
+
+                # ✅ อัปเดตข้อมูล Stock
+                stock = Stock.objects.filter(product=updated_product, shop=shop).first()
+                if stock:
+                    stock.quantity = request.POST.get('stock_quantity', stock.quantity)
+                    stock.price = updated_product.price
+                    stock.save()
+
+                messages.success(request, f"แก้ไขสินค้า {updated_product.product_name} สำเร็จ!")
+            return redirect('manage_products', shop_id=shop.id)
+
+        # ✅ ลบสินค้า + ลบ Stock
+        elif action == 'delete_product':
+            product = Product.objects.filter(id=product_id, shop=shop).first()
+
+            if product:
+                # ✅ ลบ Stock ที่เกี่ยวข้องก่อน
+                Stock.objects.filter(product=product, shop=shop).delete()
+
+                product.delete()
+                messages.success(request, f"ลบสินค้า {product.product_name} สำเร็จ!")
+            else:
+                messages.error(request, "ไม่พบสินค้าที่ต้องการลบ")
+
             return redirect('manage_products', shop_id=shop.id)
 
     return render(request, 'manage_products.html', {
         'shop': shop,
         'products': products,
         'product_forms': product_forms,
-        'form': ProductForm(),  # ✅ ฟอร์มสำหรับเพิ่มสินค้าใหม่
+        'form': ProductForm(),
     })
-

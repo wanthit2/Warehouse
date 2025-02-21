@@ -108,7 +108,7 @@
             {% if shop or is_shop_admin %}
             <li class="list-group-item"><a href="{% url 'product_list' shop_id=shop.id %}">ดูสินค้า</a></li>
             {% endif %}
-            <li class="list-group-item"><a href="/admin/reports/">รายงานและสถิติ</a></li>
+
             {% if user.is_superuser %}
             <li class="list-group-item"><a href="{% url 'manage_shops' %}" class="btn btn-info">จัดการร้านค้า</a></li>
             {% endif %}

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -21,41 +21,40 @@
 
         /* Sidebar */
         .sidebar {
-            width: 150px; /* ปรับความกว้างให้เหมาะสม */
+            width: 140px;
             background-color: #ffffff;
-            color: white;
             padding: 20px 10px;
             height: 100vh;
             box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 50px; /* เพิ่มระยะห่างระหว่างการ์ด */
+            gap: 25px;
             position: relative;
         }
 
+        /* ปรับขนาด Item-Card */
         .sidebar .item-card {
-            width: 100px;
-            height: 100px;
+            width: 90px;
+            height: 90px;
             background-color: #000066;
             color: white;
             border-radius: 10px;
-            border: none;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-decoration: none;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: bold;
             transition: transform 0.3s, background-color 0.3s;
             box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
         }
 
+        /* ปรับขนาดไอคอนให้พอดี */
         .sidebar .item-card i {
-            margin-bottom: 5px;
-            font-size: 32px;
+            font-size: 28px;
+            margin-bottom: 3px;
         }
 
         .sidebar .item-card:hover {
@@ -63,21 +62,20 @@
             transform: scale(1.05);
         }
 
-        /* Home Icon */
+        /* ปุ่ม Home */
         .sidebar .home-icon {
             position: absolute;
-            bottom: 20px;
-            left: 20px;
-            background-color: #000066;
-            color: white;
+            bottom: 15px;
             width: 50px;
             height: 50px;
+            background-color: #000066;
+            color: white;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 50%;
             text-decoration: none;
-            font-size: 20px;
+            font-size: 18px;
             transition: transform 0.3s, background-color 0.3s;
             box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
         }
@@ -147,6 +145,7 @@
     </style>
 </head>
 <body>
+
 <!-- Sidebar -->
 <div class="sidebar">
     <a href="{% url 'my_view' %}" class="item-card"><i class="bi bi-bar-chart-line"></i> รายการ</a>
@@ -156,20 +155,18 @@
     <a href="{% url 'stock_view' %}" class="item-card"><i class="bi bi-box-seam"></i> สต๊อก</a>
     <a href="{% url 'home1' %}" class="home-icon"><i class="bi bi-house"></i></a>
 
-    <!-- ปุ่ม "ขอเป็นเจ้าของร้าน" (แสดงให้ผู้ใช้ทั่วไป) -->
-    <a href="{% url 'request_status' user.id %}" class="item-card">
+    <!-- ปุ่ม "ขอเป็นเจ้าของร้าน" -->
+    <a href="{% url 'request_status' user.id %}" class="item-card request-button">
         <i class="bi bi-person-bounding-box"></i> ขอเป็นเจ้าของร้าน
     </a>
 
-    <!-- ปุ่ม "ไปยังหน้าแอดมิน" (แสดงเฉพาะคนที่ได้รับอนุมัติแล้ว) -->
+    <!-- ปุ่ม "ไปยังหน้าแอดมิน" -->
     {% if user.is_shop_owner_approved or user.is_admin %}
-    <a href="{% url 'admin_homeshop' %}" class="item-card">
+    <a href="{% url 'admin_homeshop' %}" class="item-card admin-button">
         <i class="bi bi-shield-lock"></i> ไปยังหน้าแอดมิน
     </a>
     {% endif %}
-
 </div>
-
 
 <!-- Main Content -->
 <div class="main-content">
@@ -187,25 +184,16 @@
                     🚪 ออกจากระบบ
                 </button>
             </form>
-
         </div>
     </div>
 
-    <!-- Grid Content -->
+    <!-- Grid Content (แสดงข้อมูลเดียว) -->
     <div class="grid-container">
         <div class="grid-item">
-            <img src="edit-icon.png" alt="Edit Icon">
-        </div>
-        <div class="grid-item">
-            <img src="edit-icon.png" alt="Edit Icon">
-        </div>
-        <div class="grid-item">
-            <img src="edit-icon.png" alt="Edit Icon">
-        </div>
-        <div class="grid-item">
-            <img src="edit-icon.png" alt="Edit Icon">
+            <i class="bi bi-exclamation-circle" style="font-size: 32px;"></i>
+            <h3>สินค้าใกล้หมด</h3>
+            <p>📦 {{ low_stock_product.product_name }} คงเหลือ {{ low_stock_product.quantity }} ชิ้น</p>
         </div>
     </div>
-</div>
 </body>
 </html>

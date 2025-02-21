@@ -1,40 +1,61 @@
-# myapp/signals.py
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.contrib.auth.models import User
-from .models import Profile
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from .models import Order, Stock  # import โมเดลที่เกี่ยวข้อง
-
-
+from .models import UserProfile, Order, Stock, Product
 
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
-        Profile.objects.create(user=instance)
+        UserProfile.objects.create(user=instance)
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
     instance.profile.save()
 
 
+
+### 🔹 ลด Stock เมื่อมีการสั่งซื้อ
 @receiver(post_save, sender=Order)
-def update_stock(sender, instance, created, **kwargs):
-    if created:  # ถ้าเป็นการเพิ่มคำสั่งซื้อใหม่
-        for item in instance.items.split(','):  # สมมติรายการใน order เป็น list ของสินค้า (เช่น 'product1,product2')
-            product_name, quantity_ordered = item.split(":")
-            quantity_ordered = int(quantity_ordered)
+def reduce_stock_on_order(sender, instance, created, **kwargs):
+    if created:  # ✅ ทำงานเมื่อคำสั่งซื้อถูกสร้างใหม่
+        if not instance.product:
+            print(f"⚠️ คำสั่งซื้อ ID {instance.order_id} ไม่มีสินค้า ไม่สามารถลด Stock ได้!")
+            return
 
-            # หา stock ที่ตรงกับชื่อสินค้าจาก store
-            try:
-                stock = Stock.objects.get(product_name=product_name, store=instance.store)
-                if stock.quantity >= quantity_ordered:
-                    stock.quantity -= quantity_ordered  # ลดจำนวนสินค้าในสต๊อก
+        try:
+            # ✅ ลดจำนวนสินค้าในคลัง Stock
+            stock = Stock.objects.filter(product=instance.product, shop=instance.shop).first()
+            if stock:
+                if stock.quantity >= instance.quantity:
+                    stock.quantity -= instance.quantity  # ✅ ลดจำนวนสินค้าใน Stock
                     stock.save()
+                    print(f"✅ อัปเดตสต๊อกสำเร็จ! คงเหลือ: {stock.quantity} ชิ้น")
                 else:
-                    raise ValueError(f"จำนวนสินค้าในสต๊อกไม่เพียงพอสำหรับสินค้า: {product_name}")
-            except Stock.DoesNotExist:
-                raise ValueError(f"ไม่พบสินค้าในสต๊อก: {product_name}")
+                    print(f"⚠️ สินค้า {instance.product.product_name} ไม่พอในสต๊อก!")
+            else:
+                print(f"⚠️ ไม่พบ Stock สำหรับสินค้า {instance.product.product_name}")
 
+        except Stock.DoesNotExist:
+            print(f"⚠️ ไม่พบสินค้า {instance.product.product_name} ในสต๊อก!")
+
+
+
+
+### 🔹 ลบ Stock เมื่อสินค้าถูกลบ
+@receiver(post_delete, sender=Product)
+def delete_product_stock(sender, instance, **kwargs):
+    try:
+        print(f"🗑️ กำลังลบสินค้า {instance.product_name} จาก Stock...")
+        Stock.objects.filter(product=instance).delete()
+        print(f"✅ สินค้า {instance.product_name} ถูกลบจาก Stock แล้ว")
+    except Exception as e:
+        print(f"⚠️ เกิดข้อผิดพลาดในการลบ Stock: {e}")
+
+
+
+@receiver(post_save, sender=Product)
+def update_stock_on_create(sender, instance, created, **kwargs):
+    if created:  # ทำงานเมื่อเพิ่มสินค้าใหม่
+        instance.stock_quantity = instance.quantity
+        instance.save()

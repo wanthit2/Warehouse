@@ -13,6 +13,54 @@
 
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        .content {
+            flex-grow: 1;
+            padding: 20px;
+            background: #ffffff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            font-weight: bold;
+        }
+        .table {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            text-align: center;
+            vertical-align: middle;
+        }
+        .btn {
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+        .btn-success:hover {
+            background-color: #218838;
+        }
+        .table-danger {
+            background-color: #f8d7da !important;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -28,77 +76,84 @@
 
         <!-- Main Content -->
         <main class="content">
-            <h1 class="mb-4">สต็อกสินค้า</h1>
+            <h1>📦 สต็อกสินค้า</h1>
 
             <!-- Search Bar -->
-            <div class="search-bar mb-4">
-                <form method="get" class="d-flex">
-                    {{ form.as_p }}
+            <div class="mb-4">
+                <!-- ✅ ฟอร์มค้นหา -->
+                <form method="get" class="d-flex mb-4">
+                    <input type="text" name="search" class="form-control" placeholder="🔍 ค้นหาสินค้า..."
+                           value="{{ search_query }}">
                     <button type="submit" class="btn btn-primary ms-2">ค้นหา</button>
                 </form>
             </div>
 
             <!-- เพิ่มสต็อก -->
-            <div class="mb-3">
+            <div class="mb-3 text-center">
                 <a href="{% url 'stock_add' %}" class="btn btn-success">
                     <i class="bi bi-plus-lg"></i> เพิ่มสินค้าใหม่
                 </a>
             </div>
 
             <!-- Stock Table -->
-            <table class="table table-bordered table-striped">
-                <thead class="table-dark">
-                    <tr>
-                        <th>รหัสสินค้า</th>
-                        <th>ชื่อสินค้า</th>
-                        <th>จำนวนคงเหลือ</th>
-                        <th>ราคา</th>
-                        <th>วันที่เพิ่มสินค้า</th>
-                        <th>ร้านค้า</th>
-                        <th>รายละเอียดสินค้า</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if products %}
-                        {% for item in products %}
-                            <tr {% if item.quantity <= 5 %} class="table-danger" {% endif %}>
-                                <td>{{ item.id }}</td>
-                                <td>{{ item.product_name }}</td>
-                                <td>{{ item.quantity }}</td>
-                                <td>{{ item.price }}</td>
-                                <td>{{ item.added_date }}</td>
-                                <td>{{ item.shop.name }}</td>
-                                <td>{{ item.description }}</td>
-                            </tr>
-                        {% endfor %}
-                    {% else %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped">
+                    <thead class="table-dark">
                         <tr>
-                            <td colspan="7" class="text-center">ยังไม่มีข้อมูล</td>
+                            <th>รหัสสินค้า</th>
+                            <th>ชื่อสินค้า</th>
+                            <th>หมวดหมู่</th>
+                            <th>จำนวนคงเหลือ</th>
+                            <th>หน่วยสินค้า</th>
+                            <th>ราคา</th>
+                            <th>วันที่เพิ่มสินค้า</th>
+                            <th>ร้านค้า</th>
                         </tr>
-                    {% endif %}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {% if stocks %}
+                            {% for stock in stocks %}
+                                <tr {% if stock.quantity <= 5 %} class="table-danger" {% endif %}>
+                                    <td>{{ stock.product.id }}</td>
+                                    <td>{{ stock.product.product_name }}</td>
+                                    <td>{{ stock.product.category.name|default:"ไม่มีหมวดหมู่" }}</td>
+                                    <td>{{ stock.quantity }}</td>
+                                    <td>{{ stock.product.get_unit_display }}</td>
+                                    <td>{{ stock.price }} บาท</td>
+                                    <td>{{ stock.added_date }}</td>
+                                    <td>{{ stock.shop.name }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="8" class="text-center">❌ ยังไม่มีข้อมูล</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
         </main>
     </div>
 
     <!-- แจ้งเตือนสินค้าเหลือน้อย -->
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            {% if low_stock_products %}
-                let productList = "";
-                {% for product in low_stock_products %}
-                    productList += "🔴 {{ product.product_name }} - คงเหลือ {{ product.quantity }} ชิ้น\n";
-                {% endfor %}
+       document.addEventListener("DOMContentLoaded", function () {
+    let productList = "";
+    {% for product in low_stock_products %}
+        productList += "🔴 {{ product.product.product_name|escapejs }} - คงเหลือ {{ product.quantity }} ชิ้น\n";
+    {% endfor %}
 
-                Swal.fire({
-                    title: "⚠️ สินค้าใกล้หมด!",
-                    text: productList,
-                    icon: "warning",
-                    confirmButtonText: "รับทราบ",
-                    confirmButtonColor: "#ff8800",
-                });
-            {% endif %}
+    if (productList.trim() !== "") {
+        Swal.fire({
+            title: "⚠️ สินค้าใกล้หมด!",
+            text: productList,
+            icon: "warning",
+            confirmButtonText: "รับทราบ",
+            confirmButtonColor: "#ff8800",
         });
+    }
+});
+
     </script>
 
     <!-- Bootstrap Script -->

@@ -85,7 +85,7 @@
             {% if request.user.is_superuser or order.shop.owner == request.user or request.user in order.shop.admins.all %}
                 <tr>
                     <td>{{ order.order_id }}</td>
-                    <td>{{ order.product_name }}</td>
+                    <td>{{ order.product.product_name}}</td>
                     <td>{{ order.price|floatformat:2 }}</td>
                     <td>{{ order.quantity }}</td>
                     <td>{{ order.total_price|floatformat:2 }}</td>
@@ -131,8 +131,15 @@
 </table>
 
 <div class="container mt-5">
-    <a href="{% url 'admin_homeshop' %}" class="btn btn-outline-secondary">🔙 กลับไปหน้า Admin</a>
+    {% if user.is_authenticated %}
+        {% if request.user.is_superadmin or request.user.is_superuser %}
+            <a href="{% url 'admin_home' %}" class="btn btn-outline-primary">🏠 ไปยังหน้า Super Admin</a>
+        {% else %}
+            <a href="{% url 'admin_homeshop' %}" class="btn btn-outline-secondary">🔙 กลับไปหน้า Admin</a>
+        {% endif %}
+    {% endif %}
 </div>
+
 
 </body>
 </html>
