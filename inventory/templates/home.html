@@ -161,11 +161,12 @@
     </a>
 
     <!-- ปุ่ม "ไปยังหน้าแอดมิน" -->
-    {% if user.is_shop_owner_approved or user.is_admin %}
+    {% if user.is_shop_owner_approved or user.is_admin or user.is_shop_admin %}
     <a href="{% url 'admin_homeshop' %}" class="item-card admin-button">
         <i class="bi bi-shield-lock"></i> ไปยังหน้าแอดมิน
     </a>
-    {% endif %}
+{% endif %}
+
 </div>
 
 <!-- Main Content -->

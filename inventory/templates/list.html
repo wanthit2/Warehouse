@@ -54,10 +54,6 @@
             </form>
         </div>
 
-        <!-- Add Product Button -->
-        <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
-            <a href="{% url 'create_product' %}" class="btn btn-success">➕ เพิ่มสินค้า</a>
-        </div>
 
         <!-- Products Table -->
         <table class="table">
@@ -80,20 +76,9 @@
                 <td>{{ product.product_name }}</td>
                 <td>{{ product.category.name|default:"ไม่ระบุ" }}</td>
                 <td>{{ product.price|floatformat:2 }}</td>
-                <td>{{ product.total_stock|default:"0" }}</td>
+                <td class="stock-count" data-stock="{{ product.total_stock|default:'0' }}">{{ product.total_stock|default:"0" }}</td>
+                <td class="product-status"></td>
 
-
-                <td>
-                    {% if product.status == "available" %}
-                        ✅ พร้อมขาย
-                    {% elif product.status == "out_of_stock" %}
-                        ❌ หมดสต๊อก
-                    {% elif product.status == "discontinued" %}
-                        ⚠️ หยุดจำหน่าย
-                    {% else %}
-                        ไม่มีข้อมูล
-                    {% endif %}
-                </td>
                 <td>
                     <a href="{% url 'product_detail_view' product.id %}" class="btn btn-primary">📄 รายละเอียด</a>
                     {% if user.is_authenticated and user.is_staff %}
@@ -111,14 +96,32 @@
         </table>
     </main>
 </div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    let rows = document.querySelectorAll(".stock-count");
 
-<!-- Home Button -->
-<div class="home">
-    <a href="{% url 'home' %}" class="item-cards">
-        <i class="bi bi-house-door"></i> Home
-    </a>
-</div>
+    rows.forEach(row => {
+        let stock = parseInt(row.getAttribute("data-stock"), 10);
+        let statusCell = row.nextElementSibling; // เลือก `<td>` ถัดไปที่ใช้แสดงสถานะ
+        let statusText = "";
+        let statusColor = "";
 
+        if (stock > 5) {
+            statusText = "✅ พร้อมขาย";
+            statusColor = "green";
+        } else if (stock > 0) {
+            statusText = "⚠️ ใกล้หมด";
+            statusColor = "orange";
+        } else {
+            statusText = "❌ หมดสต๊อก";
+            statusColor = "red";
+        }
+
+        statusCell.textContent = statusText;
+        statusCell.style.color = statusColor;
+    });
+});
+</script>
 </body>
 </html>
 

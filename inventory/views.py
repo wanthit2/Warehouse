@@ -157,11 +157,34 @@ def my_view(request):
     category_filter = request.GET.get('category', '')
     status_filter = request.GET.get('status', '')
 
-    # ✅ ใช้ Coalesce ให้ total_stock เป็น 0 ถ้าไม่มีสินค้าใน stock
-    products = Product.objects.annotate(
-        total_stock=Coalesce(Sum('stock__quantity'), Value(0))  # ✅ ป้องกัน None
+    # ✅ ตรวจสอบว่าผู้ใช้ล็อกอินอยู่หรือไม่
+    if not request.user.is_authenticated:
+        return render(request, 'list.html', {
+            'products': [],
+            'query': query,
+            'categories': Category.objects.all(),
+            'selected_category': category_filter,
+            'selected_status': status_filter,
+        })
+
+    # ✅ ถ้าผู้ใช้เป็นเจ้าของร้าน ให้เห็นสินค้าของร้านตัวเอง
+    if request.user.is_shop_owner:
+        products = Product.objects.filter(shop__owner=request.user)
+
+    # ✅ ถ้าผู้ใช้เป็น Admin ร้าน ให้เห็นสินค้าของร้านที่ตนเป็นแอดมิน
+    elif request.user.is_shop_admin:
+        shops = Shop.objects.filter(admins=request.user)  # ดึงร้านที่ user เป็นแอดมิน
+        products = Product.objects.filter(shop__in=shops)  # ดึงสินค้าของร้านที่เป็นแอดมิน
+
+    else:
+        products = Product.objects.none()  # ❌ ไม่ใช่เจ้าของร้านหรือแอดมินร้าน → ไม่เห็นอะไรเลย
+
+    # ✅ ป้องกันค่า None โดยใช้ Coalesce
+    products = products.annotate(
+        total_stock=Coalesce(Sum('stock__quantity'), Value(0))
     )
 
+    # ✅ กรองตามเงื่อนไขการค้นหา
     if query:
         products = products.filter(product_name__icontains=query)
     if category_filter:
@@ -176,6 +199,7 @@ def my_view(request):
         'selected_category': category_filter,
         'selected_status': status_filter,
     })
+
 
 @login_required
 def order_view(request):
@@ -1132,26 +1156,31 @@ def stock_delete(request, id):
 
 @login_required
 def manage_shop_admins(request, shop_id):
-    # ดึงข้อมูลร้านที่มี shop_id
     shop = get_object_or_404(Shop, id=shop_id)
 
-    # ดึงข้อมูลแอดมินของร้าน
-    admins = shop.admins.all()  # สมมติว่า Shop มีฟิลด์ admins ที่เชื่อมโยงกับผู้ใช้ (CustomUser)
+    # ดึงแอดมินของร้านนี้
+    admins = shop.admins.all()
 
-    # ดึงข้อมูลผู้ใช้ทั้งหมด
-    all_users = CustomUser.objects.all()
+    # ดึงผู้ใช้ที่ยังไม่เป็นแอดมินร้านนี้
+    all_users = CustomUser.objects.exclude(id__in=admins.values_list('id', flat=True))
 
-    # การจัดการการเพิ่มหรือลบแอดมิน
     if request.method == "POST":
+        admin_id = request.POST.get("admin_id")
+        admin_user = get_object_or_404(CustomUser, id=admin_id)
+
         if 'add_admin' in request.POST:
-            admin_id = request.POST.get("admin_id")
-            admin_user = CustomUser.objects.get(id=admin_id)
-            shop.admins.add(admin_user)  # เพิ่มแอดมินให้กับร้าน
+            shop.admins.add(admin_user)  # ✅ เพิ่มแอดมินให้ร้านค้า
+            admin_user.is_shop_admin = True  # ✅ กำหนดให้เป็นแอดมินร้าน
+            admin_user.user_type = "shop_admin"  # ✅ เปลี่ยนประเภทผู้ใช้เป็นแอดมินร้าน
+            admin_user.save()
             messages.success(request, f"เพิ่มแอดมิน {admin_user.username} แล้ว")
+
         elif 'remove_admin' in request.POST:
-            admin_id = request.POST.get("admin_id")
-            admin_user = CustomUser.objects.get(id=admin_id)
-            shop.admins.remove(admin_user)  # ลบแอดมินออกจากร้าน
+            shop.admins.remove(admin_user)  # ✅ ลบแอดมินออกจากร้าน
+            if not admin_user.admin_shops.exists():  # ถ้าไม่ได้เป็นแอดมินร้านไหนแล้ว
+                admin_user.is_shop_admin = False
+                admin_user.user_type = "customer"  # ✅ เปลี่ยนประเภทผู้ใช้กลับเป็นลูกค้า
+                admin_user.save()
             messages.success(request, f"ลบแอดมิน {admin_user.username} แล้ว")
 
     context = {
