@@ -3,14 +3,24 @@ from django.conf import settings
 from inventory.models import Shop  # ✅ นำเข้า Shop
 
 class ChatSession(models.Model):
+    STATUS_CHOICES = [
+        ('open', 'เปิด'),
+        ('in_progress', 'กำลังดำเนินการ'),
+        ('closed', 'ปิดแล้ว'),
+    ]
+
     customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="customer_sessions")
     admin = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="admin_sessions", null=True, blank=True)
     shop = models.ForeignKey(Shop, on_delete=models.CASCADE, null=True, blank=True)  # ✅ เพิ่มฟิลด์ shop
     created_at = models.DateTimeField(auto_now_add=True)
     is_resolved = models.BooleanField(default=False)
 
+    # ✅ เพิ่มฟิลด์ status
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
+
     def __str__(self):
-        return f"Chat {self.id} - {self.customer.username} @ {self.shop.name if self.shop else '❌ ไม่มีร้าน'}"  # ✅ แสดงชื่อร้าน
+        return f"Chat {self.id} - {self.customer.username} @ {self.shop.name if self.shop else '❌ ไม่มีร้าน'}"
+
 
 
 

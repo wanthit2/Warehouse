@@ -5,7 +5,6 @@ from django.contrib.auth.decorators import user_passes_test
 
 from .views import AddShopView
 
-
 # ฟังก์ชันเช็คว่าเป็นแอดมินหรือไม่
 def admin_required(function):
     return user_passes_test(lambda u: u.is_staff)(function)
@@ -106,11 +105,6 @@ urlpatterns = [
     path('shop/<int:shop_id>/manage_admins/', views.manage_shop_admins, name='manage_shop_admins'),
     path('manage-products/<int:shop_id>/', views.manage_products, name='manage_products'),
     path('admin_order_list/', views.admin_order_list, name='admin_order_list'),
-    path('admin/orders/', views.order_list, name='order_list'),  # คำสั่งซื้อทั้งหมด
-    path('admin/orders/completed/', views.order_list, {'status': 'completed'}, name='completed_orders'),
-    # คำสั่งซื้อที่ดำเนินการแล้ว
-    path('admin/orders/pending/', views.order_list, {'status': 'pending'}, name='pending_orders'),
-    # คำสั่งซื้อที่รอดำเนินการ
 
 
 
@@ -124,7 +118,6 @@ urlpatterns = [
 
     # หน้ายืนยันว่าตั้งรหัสผ่านใหม่สำเร็จ
     path('reset/done/', auth_views.PasswordResetCompleteView.as_view(template_name='password_reset_complete.html'),name='password_reset_complete'),
-
 
 
 ]

@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from .models import Order, Product, Shop, Stock, CustomUser  # เปลี่ยน Store เป็น Shop
+from django.urls import path
+from . import views
 
 # ใช้ get_user_model() ถ้าคุณใช้ CustomUser
 User = get_user_model()
@@ -10,6 +12,7 @@ class OrderAdmin(admin.ModelAdmin):
     list_display = ('order_id', 'product', 'price', 'quantity', 'status', 'user', 'shop', 'total_price')
     list_filter = ('status', 'shop')  # เปลี่ยน store เป็น shop
     search_fields = ('product', 'order_id', 'user__username')
+
 
     def get_queryset(self, request):
         queryset = super().get_queryset(request)

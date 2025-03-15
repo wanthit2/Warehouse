@@ -39,6 +39,8 @@
                     <td>{{ chat.customer.username }}</td>
                     <td>{{ chat.created_at|date:"Y-m-d H:i" }}</td>
                     <td class="status-{{ chat.status }}">{{ chat.get_status_display }}</td>
+
+
                     <td>
                         <a href="{% url 'admin_chat' chat.id %}">👀 ดูรายละเอียด</a>
                     </td>

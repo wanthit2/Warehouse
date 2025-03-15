@@ -6,35 +6,101 @@
     <title>Admin Home</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
     <style>
-        /* สไตล์สำหรับแต่ละการ์ดร้าน */
-        .shop-card {
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
+        /* Custom Styles */
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Roboto', sans-serif;
         }
-        .shop-card .card-body {
-            padding: 20px;
+
+        .container {
+            max-width: 1200px;
         }
-        .shop-card .card-title {
+
+        .card-header {
             font-size: 1.25rem;
+            background-color: #007bff;
+            color: white;
             font-weight: bold;
         }
-        .shop-card .card-subtitle {
-            font-size: 1rem;
-            font-weight: 500;
+
+        .shop-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
         }
+
+        .shop-card .card-body {
+            padding: 30px;
+        }
+
+        .shop-card .card-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .shop-card .card-subtitle {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #6c757d;
+        }
+
         .shop-card ul {
             padding-left: 20px;
         }
+
         .shop-card ul li {
+            font-size: 1.1rem;
+            color: #495057;
+        }
+
+        .btn-light {
+            background-color: #f8f9fa;
+            color: #0052c3;
+            font-weight: bold;
+        }
+
+        .btn-light:hover {
+            background-color: #e2e6ea;
+            color: #0056b3;
+        }
+
+        .btn-primary {
+            background-color: #19c330;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+        .list-group-item a {
+            font-size: 1.1rem;
+            color: #1f59aa;
+        }
+
+        .list-group-item a:hover {
+            color: #0056b3;
+            text-decoration: underline;
+        }
+
+        h1, h2 {
+            color: #000000;
+            font-weight: bold;
+        }
+
+        .section-title {
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .footer {
+            margin-top: 40px;
+            text-align: center;
             font-size: 1rem;
-            color: #555;
+            color: #3f709c;
         }
-        .card-header {
-            font-size: 1.2rem;
-            background-color: #343a40;
-            color: white;
-        }
+
     </style>
 </head>
 <body>
@@ -48,40 +114,22 @@
                 <div class="card text-bg-primary shop-card">
                     <div class="card-body">
                         <h5 class="card-title">คำสั่งซื้อทั้งหมด</h5>
-                        <p class="card-text">จำนวน: {{ total_orders_count }} รายการ</p>
+                        <p class="card-text">จำนวน:{{ total_products }} รายการ</p>
                         <a href="{% url 'admin_order_list' %}" class="btn btn-light">ดูรายละเอียด</a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card text-bg-success shop-card">
-                    <div class="card-body">
-                        <h5 class="card-title">คำสั่งซื้อที่ดำเนินการแล้ว</h5>
-                        <p class="card-text">จำนวน: {{ completed_orders_count }} รายการ</p>
-                        <a href="{% url 'completed_orders' %}" class="btn btn-light">ดูรายละเอียด</a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card text-bg-warning shop-card">
-                    <div class="card-body">
-                        <h5 class="card-title">คำสั่งซื้อที่รอดำเนินการ</h5>
-                        <p class="card-text">จำนวน: {{ pending_orders_count }} รายการ</p>
-                        <a href="{% url 'pending_orders' %}" class="btn btn-light">ดูรายละเอียด</a>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- แสดงแอดมินของทุกร้าน -->
-        <h2 class="mt-4">แอดมินของทุกร้าน</h2>
+        <h2 class="section-title">แอดมินของทุกร้าน</h2>
         <div class="row">
             {% for shop, admins in admins_by_shop.items %}
             <div class="col-md-4">
                 <div class="card shop-card">
                     <div class="card-header">{{ shop.name }}</div>
                     <div class="card-body">
-                        <h6 class="card-subtitle mb-2 text-muted">แอดมิน:</h6>
+                        <h6 class="card-subtitle mb-2">แอดมิน:</h6>
                         <ul>
                             {% for admin in admins %}
                             <li>{{ admin.username }}</li>
@@ -99,23 +147,23 @@
         {% endif %}
 
         <!-- เมนูการจัดการต่างๆ -->
-        <h2 class="mt-4">เมนูการจัดการ</h2>
+        <h2 class="section-title">เมนูการจัดการ</h2>
         <ul class="list-group">
             <li class="list-group-item"><a href="{% url 'admin_order_list' %}">จัดการคำสั่งซื้อ</a></li>
             {% if user.is_superuser %}
-            <li class="list-group-item"><a href="{% url 'manage_users' %}">จัดการผู้ใช้</a></li>
+            <li class="list-group-item"><a href="{% url 'manage_users' %}">จัดการผู้ใช้ที่ขอเป็นเจ้าของร้าน</a></li>
             {% endif %}
             {% if shop or is_shop_admin %}
             <li class="list-group-item"><a href="{% url 'product_list' shop_id=shop.id %}">ดูสินค้า</a></li>
             {% endif %}
-
             {% if user.is_superuser %}
             <li class="list-group-item"><a href="{% url 'manage_shops' %}" class="btn btn-info">จัดการร้านค้า</a></li>
             {% endif %}
-            <a href="{% url 'admin_chat_list' %}" class="btn btn-dark">ไปที่แจ้งปัญหา</a>
+            <li class="list-group-item"><a href="{% url 'admin_chat_list' %}" class="btn btn-info">ไปที่แจ้งปัญหา</a></li>
         </ul>
-    </div>
 
+
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 </body>

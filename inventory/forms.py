@@ -47,37 +47,38 @@ class OrderForm(forms.ModelForm):
             order.save()
         return order
 
-
 ### 🔹 แก้ไข `ProductForm` (ลบ `store`)
 class ProductForm(forms.ModelForm):
-    category = forms.ModelChoiceField(
-        queryset=Category.objects.all(),
-        empty_label="เลือกหมวดหมู่",  # ✅ เปลี่ยนข้อความ dropdown
-        required=True,
-        label="หมวดหมู่"  # ✅ เปลี่ยน Label เป็นภาษาไทย
+    stock_quantity = forms.IntegerField(
+        required=False,
+        label="จำนวนในสต๊อก",
+        min_value=0
     )
+
     class Meta:
         model = Product
-        fields = ['product_name', 'description', 'price', 'quantity','category', 'unit', 'image', 'stock_quantity']
-        widgets = {
-            'description': forms.Textarea(attrs={'rows': 4, 'cols': 40}),
-        }
+        fields = ['product_name', 'description', 'price', 'quantity', 'category', 'unit', 'image']
 
     def __init__(self, *args, **kwargs):
-        self.shop = kwargs.pop('shop', None)  # ✅ รับ shop จาก views
+        self.shop = kwargs.pop('shop', None)
         super().__init__(*args, **kwargs)
 
-        # ✅ ให้สามารถเลือกหมวดหมู่ได้
-        self.fields['category'].queryset = Category.objects.all()
-
+        # ✅ ถ้ามีสินค้าอยู่แล้ว ให้ดึง stock_quantity จาก Stock
+        if self.instance and self.instance.pk:
+            stock = Stock.objects.filter(product=self.instance, shop=self.instance.shop).first()
+            if stock:
+                self.fields['stock_quantity'].initial = stock.quantity  # ✅ ตั้งค่าเริ่มต้นจากสต๊อก
 
     def save(self, commit=True):
         product = super().save(commit=False)
         if self.shop:
-            product.shop = self.shop  # ✅ กำหนดร้านอัตโนมัติ
+            product.shop = self.shop  # ✅ กำหนดร้านค้าให้สินค้า
+
         if commit:
             product.save()
+
         return product
+
 
 
 

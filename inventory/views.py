@@ -278,33 +278,6 @@ def login_view(request):
 
     return render(request, "login.html")
 
-def custom_login(request):
-    if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
-
-        # ตรวจสอบข้อมูลผู้ใช้ (ยืนยันตัวตน)
-        user = authenticate(request, username=username, password=password)
-
-        if user is not None:
-            login(request, user)
-
-            # ตรวจสอบสิทธิ์ผู้ใช้
-            if user.is_superuser:  # ถ้าเป็น superadmin ไปที่ /admin/
-                return redirect('/admin/')
-            elif user.is_staff:  # ถ้าเป็น staff ธรรมดา ไปที่หน้า admin
-                return redirect('/staff-dashboard/')
-            else:
-                return redirect('/home1/')  # ผู้ใช้ทั่วไปไปหน้า home1
-
-        else:
-            messages.error(request, "Username หรือ Password ไม่ถูกต้อง")
-            return redirect('login')  # กลับไปที่หน้า login
-
-    return render(request, 'login.html')
-
-
-
 
 
 def sales_view(request):
@@ -378,19 +351,26 @@ def register(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            user = form.save(commit=False)
             username = form.cleaned_data['username']
-            if not username:  # ตรวจสอบว่า username ไม่เป็นค่าว่าง
-                form.add_error('username', 'Username cannot be empty')
+            email = form.cleaned_data['email']
+
+            # ตรวจสอบว่ามี username หรือ email ในระบบแล้วหรือไม่
+            if User.objects.filter(username=username).exists():
+                form.add_error('username', 'Username นี้ถูกใช้ไปแล้ว')
+            elif User.objects.filter(email=email).exists():
+                form.add_error('email', 'Email นี้ถูกใช้ไปแล้ว')
             else:
+                user = form.save(commit=False)
                 user.set_password(form.cleaned_data['password1'])
                 user.save()
                 messages.success(request, 'การลงทะเบียนสำเร็จ! กรุณาเข้าสู่ระบบ.')
                 return redirect('login')
-        else:
-            messages.error(request, 'กรุณากรอกข้อมูลให้ครบถ้วน')
+
+        messages.error(request, 'กรุณากรอกข้อมูลให้ถูกต้อง')
+
     else:
         form = CustomUserCreationForm()
+
     return render(request, 'register.html', {'form': form})
 
 
@@ -449,68 +429,67 @@ def order_create(request, product_id):
     if request.method == 'POST':
         quantity = int(request.POST.get('quantity', 1))
 
+        # ตรวจสอบจำนวนสินค้า
         if quantity > product.quantity or quantity <= 0:
             return render(request, 'order_create.html', {
                 'product': product,
                 'error_message': 'จำนวนสินค้าที่ต้องการสั่งซื้อไม่ถูกต้อง',
             })
 
-        # ✅ ลดสต๊อกสินค้า
-        product.quantity -= quantity
-        product.save()
+        # ✅ บันทึก quantity ใน session
+        request.session['quantity'] = quantity
 
-        # ✅ สร้างคำสั่งซื้อ พร้อมบันทึก `product`
+        # ✅ สร้างคำสั่งซื้อ แต่ยังไม่เปลี่ยนสถานะ
         Order.objects.create(
-            product=product,  # ✅ ใช้ ForeignKey product
+            product=product,
             price=product.price,
             quantity=quantity,
-            status='pending',
+            status='pending',  # ตั้งสถานะเป็น "pending" ก่อน
             image=product.image,
             user=request.user,
             shop=product.shop,
         )
 
-        return redirect('order_success')
+        # Redirect ไปยังหน้า order_confirmation
+        return redirect('order_confirmation', product_id=product.id)
 
     return render(request, 'order_create.html', {'product': product})
-
-
 
 
 @login_required
 def order_confirmation(request, product_id):
     product = get_object_or_404(Product, id=product_id)
 
-    if request.method == 'POST':
-        quantity = request.session.get('quantity', 1)
-        shop = product.shop if hasattr(product, 'shop') else None
-
-        # ✅ บันทึกคำสั่งซื้อโดยใช้ ForeignKey
-        order = Order.objects.create(
-            product=product,  # ✅ ใช้ ForeignKey แทน String
-            price=product.price,
-            quantity=quantity,
-            status='pending',
-            image=product.image,
-            user=request.user,
-            shop=shop,
-        )
-
-        # ✅ ลดสต๊อกสินค้า
-        stock = Stock.objects.filter(product=product).first()
-        if stock:
-            if stock.quantity >= quantity:
-                stock.quantity -= quantity
-                stock.save()
-                print(f"✅ อัปเดตสต๊อกสำเร็จ! คงเหลือ: {stock.quantity} ชิ้น")
-            else:
-                print(f"⚠️ สินค้า {product.product_name} ไม่เพียงพอในสต๊อก!")
-        else:
-            print(f"⚠️ ไม่พบสินค้า {product.product_name} ในสต๊อก!")
-
-        return redirect('order_success')
-
+    # ดึง quantity จาก session ที่บันทึกไว้
     quantity = request.session.get('quantity', 1)
+
+    # ตรวจสอบว่า quantity ถูกบันทึกไว้ใน session หรือไม่
+    if quantity <= 0:
+        return redirect('order_create', product_id=product.id)
+
+    # เมื่อผู้ใช้กดยืนยัน
+    if request.method == 'POST':
+        # ลดสต๊อกสินค้า
+        if product.quantity >= quantity:
+            product.quantity -= quantity
+            product.save()
+
+            # อัปเดตคำสั่งซื้อจาก "pending" เป็น "completed" หรือ "confirmed"
+            order = Order.objects.filter(product=product, status='pending').first()
+            if order:
+                order.status = 'completed'  # เปลี่ยนสถานะ
+                order.save()
+
+            # Redirect ไปยังหน้า order_success
+            return redirect('order_success')
+        else:
+            return render(request, 'order_confirmation.html', {
+                'product': product,
+                'quantity': quantity,
+                'total_price': product.price * quantity,
+                'error_message': 'สินค้าคงเหลือไม่เพียงพอ',
+            })
+
     return render(request, 'order_confirmation.html', {
         'product': product,
         'quantity': quantity,
@@ -518,15 +497,9 @@ def order_confirmation(request, product_id):
     })
 
 
-
-
 def order_success(request):
     return render(request, 'order_success.html')
 
-
-def order_list(request):
-    orders = Order.objects.prefetch_related('items').all()  # ดึงคำสั่งซื้อพร้อมสินค้า
-    return render(request, 'order_list.html', {'orders': orders})
 
 
 @login_required
@@ -1236,7 +1209,7 @@ def manage_products(request, shop_id):
                 # ✅ อัปเดตข้อมูล Stock
                 stock = Stock.objects.filter(product=updated_product, shop=shop).first()
                 if stock:
-                    stock.quantity = request.POST.get('stock_quantity', stock.quantity)
+                    stock.quantity = int(request.POST.get('stock_quantity', stock.quantity))
                     stock.price = updated_product.price
                     stock.save()
 
@@ -1264,3 +1237,4 @@ def manage_products(request, shop_id):
         'product_forms': product_forms,
         'form': ProductForm(),
     })
+
