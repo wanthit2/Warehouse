@@ -51,14 +51,17 @@ import json
 def user_is_shop_owner(user):
     return Shop.objects.filter(owner=user).exists()
 
+def user_is_shop_admin(user):
+    return Shop.objects.filter(admins=user).exists()
+
 @login_required
 def graph_view(request):
     # 🔹 ตรวจสอบว่า user เป็นเจ้าของร้านหรือไม่
-    if not user_is_shop_owner(request.user):
-        return redirect('home1')  # 🔥 เปลี่ยนเส้นทางหากไม่ใช่เจ้าของร้าน
+    if not (user_is_shop_owner(request.user) or user_is_shop_admin(request.user)):
+        return redirect('home1') # 🔥 เปลี่ยนเส้นทางหากไม่ใช่เจ้าของร้าน
 
     # 🔹 ดึงร้านค้าที่ผู้ใช้เป็นเจ้าของ
-    shop = Shop.objects.filter(owner=request.user).first()
+    shop = Shop.objects.filter(Q(owner=request.user) | Q(admins=request.user)).first()
 
     if not shop:
         return render(request, 'graph.html', {'error_message': "คุณไม่มีร้านค้า"})
@@ -906,6 +909,7 @@ def add_admin(request):
     return render(request, 'add_admin.html', {'form': form})
 
 
+#จัดการร้าน
 def manage_shops(request):
     query = request.GET.get('q', '')
 
@@ -1134,8 +1138,8 @@ def manage_shop_admins(request, shop_id):
     # ดึงแอดมินของร้านนี้
     admins = shop.admins.all()
 
-    # ดึงผู้ใช้ที่ยังไม่เป็นแอดมินร้านนี้
-    all_users = CustomUser.objects.exclude(id__in=admins.values_list('id', flat=True))
+    # ✅ ดึงผู้ใช้ที่ยังไม่เป็นแอดมินของร้านไหนเลย
+    all_users = User.objects.filter(admin_shops=None)
 
     if request.method == "POST":
         admin_id = request.POST.get("admin_id")
@@ -1163,7 +1167,6 @@ def manage_shop_admins(request, shop_id):
     }
 
     return render(request, "manage_shop_admins.html", context)
-
 
 @login_required
 def manage_products(request, shop_id):
